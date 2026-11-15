@@ -2174,10 +2174,11 @@
         var stripped = s.replace(/sqrt|ln|log|exp|sin|cos|tan|abs/g, "");
         return /(^|[^a-z])t([^a-z]|$)/.test(stripped) ? "t" : "x";
       }
-      function solveQuestion(raw) {
+      function solveQuestion(raw, _retried) {
         var original = raw.trim();
         if (!original) return null;
         var s = original
+          .replace(/™\s*(\d)?/g, function (m, d) { return "^" + (d || "2"); })
           .replace(/²/g, "^2").replace(/³/g, "^3").replace(/√/g, "sqrt")
           .replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/–/g, "-")
           .replace(/e\^\(([^()]*)\)/g, "exp($1)")
@@ -2192,6 +2193,29 @@
             out = out.replace(re, "");
           });
           return out.trim();
+        }
+
+        /* One side of an equation, made tolerant of trailing instruction
+           words a photo reader may leave behind (e.g. the right-hand side
+           "0 Find the roots."). If the side already parses, it is returned
+           untouched. Otherwise trailing words (letters only — a run with no
+           digits and no maths operators) are dropped one at a time, and the
+           first shortened form that parses is used. If nothing parses, the
+           original side is returned so the usual error still surfaces. */
+        function canParse(str) {
+          try { parseExpression(str); return true; } catch (e) { return false; }
+        }
+        function cleanSide(sideStr) {
+          var t = cleanExpr(sideStr);
+          if (canParse(t)) return t;
+          var cand = t;
+          while (/\s/.test(cand)) {
+            var next = cand.replace(/\s+[A-Za-z]+\.?$/, "").trim();
+            if (!next || next === cand) break;
+            cand = next;
+            if (canParse(cand)) return cand;
+          }
+          return t;
         }
 
         try {
@@ -2227,7 +2251,7 @@
           if (eqStr.indexOf("=") >= 0) {
             var sides = eqStr.split("=");
             if (sides.length === 2) {
-              var sv = solveEquation(cleanExpr(sides[0]), cleanExpr(sides[1]), v);
+              var sv = solveEquation(cleanSide(sides[0]), cleanSide(sides[1]), v);
               if (sv) return sv;
               return { unsupported: "The solver handles linear and quadratic equations in one variable. Try solve x^2 - 5x + 6 = 0 or solve 3x + 7 = 22." };
             }
@@ -2255,7 +2279,33 @@
           }
           return { unsupported: "I could not reduce that one. Try an equation, a polynomial, or one of the example questions above." };
         } catch (e) {
-          return { unsupported: "I could not read that question (" + e.message + "). Check the brackets and try again — the example chips above show the formats that work best." };
+          var emsg = (e && e.message) || "";
+          var um = emsg.match(/Unexpected character:\s*([\s\S])/);
+          var badChar = um ? um[1] : null;
+          if (badChar) {
+            /* Auto-correct once and retry instead of failing hard: a ™ is a
+               misread superscript power (™2 → ^2, bare ™ → ^2); any other
+               unexpected character is removed. */
+            if (!_retried) {
+              var corrected = null;
+              if (badChar === "™") {
+                corrected = original.replace(/™\s*(\d)?/g, function (m, d) { return "^" + (d || "2"); });
+                if (corrected === original) corrected = original.split(badChar).join("");
+              } else {
+                corrected = original.split(badChar).join("");
+              }
+              if (corrected && corrected.trim() && corrected !== original) {
+                var retryRes = solveQuestion(corrected, true);
+                if (retryRes && !retryRes.unsupported) return retryRes;
+              }
+            }
+            return {
+              unsupported: "I could not read that question (Unexpected character: " + badChar + "). Tap the button below to remove the “" + badChar + "” character from your question and try again, or fix it in the box above — the example chips show the formats that work best.",
+              fixChar: badChar,
+              fixQuestion: original.split(badChar).join("").replace(/\s+/g, " ").trim()
+            };
+          }
+          return { unsupported: "I could not read that question (" + emsg + "). Check the brackets and try again — the example chips above show the formats that work best." };
         }
       }
 
@@ -2299,6 +2349,26 @@
           $("stepsList").innerHTML = "";
           note.textContent = res.unsupported;
           note.classList.add("show");
+          if (res.fixChar) {
+            /* One-tap fix: remove the offending character from the question
+               in the input box and solve again straight away. */
+            var fixBtn = document.createElement("button");
+            fixBtn.type = "button";
+            fixBtn.className = "btn";
+            fixBtn.style.display = "block";
+            fixBtn.style.marginTop = "10px";
+            fixBtn.textContent = "Remove the “" + res.fixChar + "” character and try again";
+            fixBtn.addEventListener("click", function () {
+              var cur = $("solverInput").value;
+              var fixed = cur.split(res.fixChar).join("").replace(/\s+/g, " ").trim();
+              if (!fixed || fixed === cur) fixed = res.fixQuestion || fixed;
+              if (!fixed) return;
+              $("solverInput").value = fixed;
+              renderResult(solveQuestion(fixed), fixed);
+              $("solverOut").scrollIntoView({ behavior: "smooth", block: "nearest" });
+            });
+            note.appendChild(fixBtn);
+          }
           return;
         }
         /* The METHOD always comes first — shown in a banner at the very top
@@ -2367,6 +2437,10 @@
         var t = (raw || "").replace(/[\u00a0\u2000-\u200b]+/g, " ");
         t = t.replace(/\u00b2/g, "^2").replace(/\u00b3/g, "^3").replace(/\u2074/g, "^4")
              .replace(/[\u2212\u2013\u2014]/g, "-").replace(/\u00d7/g, "*").replace(/\u00f7/g, "/");
+        /* OCR often misreads a superscript power as the trademark sign:
+           "x™2" is really x² and "x™3" is x³. Turn ™ plus an optional digit
+           into that power (a bare ™ with no digit after it means ^2). */
+        t = t.replace(/™\s*(\d)?/g, function (m, d) { return "^" + (d || "2"); });
         /* OCR often drops the ^ in powers (x² comes out as x2) — restore it
            so the solver reads it as a power, not x times 2. */
         t = t.replace(/([a-zA-Z])([2-4])(?![a-zA-Z0-9])/g, "$1^$2");
@@ -2406,9 +2480,40 @@
         setUploadStatus("");
         showUploadMsg(UNREADABLE_MSG);
       }
+      /* Detect a photo of a whole page holding several numbered questions.
+         Conservative on purpose, so a single question is never flagged:
+         a numbered item counts only when its digits are NOT immediately
+         preceded by a maths character (=, +, -, *, /, ^, ( or another
+         digit) and are followed by ". " or ") " plus a question-start word
+         (Find, Solve, Given, …) — or it is a "Q5" / "Question 5" label.
+         Returns the display labels found, e.g. ["1", "2", "Q5"]. */
+      function findMultipleQuestions(t) {
+        var byNum = {}, labels = [];
+        function add(num, label) {
+          if (!byNum[num]) { byNum[num] = true; labels.push(label); }
+        }
+        var reNum = /(^|[^\d=+\-*\/^\(])(\d{1,2})[.\)]\s+(?:Find|Solve|Given|Let|Show|Determine|Calculate|Evaluate|Differentiate|Integrate|State|Write|If|For)\b/gi;
+        var m;
+        while ((m = reNum.exec(t)) !== null) add(parseInt(m[2], 10), m[2]);
+        var reQ = /\bQ\s*(\d{1,2})\b/g;
+        while ((m = reQ.exec(t)) !== null) add(parseInt(m[1], 10), "Q" + m[1]);
+        var reQuestion = /\bQuestion\s+(\d{1,2})\b/gi;
+        while ((m = reQuestion.exec(t)) !== null) add(parseInt(m[1], 10), "Q" + m[1]);
+        return labels;
+      }
       function finishExtraction(text) {
         var cleaned = cleanExtractedText(text);
         if (!looksLikeMaths(cleaned)) { rejectUnreadableFile(); return; }
+        var multi = findMultipleQuestions(cleaned);
+        if (multi.length >= 2) {
+          /* A whole page of questions: do not load the jumble into the
+             solver or enable "Solve this" — guide the user to photograph
+             just one question instead, and say which ones were found. */
+          $("solverSolveUploadBtn").disabled = true;
+          setUploadStatus("");
+          showUploadMsg("This photo has several questions in it — I found questions " + multi.join(", ") + ". The solver can only solve one question at a time, so please take a new photo of just ONE question, close up (or crop the photo to that one question), and upload it again.");
+          return;
+        }
         $("solverInput").value = cleaned;
         $("solverSolveUploadBtn").disabled = false;
         showUploadMsg("");
