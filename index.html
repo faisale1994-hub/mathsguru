@@ -403,6 +403,16 @@
       .paper-chip { background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; font-size: .86rem; padding: 6px 12px; border-radius: 999px; }
       .dl-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
       .dl-row .btn { margin-top: 0; }
+      /* Files — Maths books: expandable chapter rows with exercise PDFs */
+      .file-chapters { display: grid; gap: 10px; margin-top: 18px; }
+      .file-chapter { border: 1px solid var(--line); border-radius: 14px; padding: 10px 16px; background: var(--bg); }
+      .file-chapter-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+      .file-chapter-toggle { font: inherit; font-weight: 800; background: none; border: none; cursor: pointer; color: var(--ink); padding: 6px 0; text-align: left; flex: 1 1 220px; }
+      .file-chapter-toggle .file-caret { color: var(--accent-dark); margin-right: 7px; }
+      .file-chapter-head .btn { margin-top: 0; }
+      .file-exercises { list-style: none; margin: 10px 0 6px; padding: 0; display: grid; gap: 8px; }
+      .file-exercises a { font-weight: 700; color: var(--accent-dark); }
+
       .dl-help { margin-top: 9px; font-size: .88rem; color: var(--ink-soft); max-width: 62ch; }
       /* The PDF reader is a dedicated FULL-PAGE view, not a small panel:
          whenever a PDF opens, it takes over the whole screen on its own
@@ -463,7 +473,7 @@
         <nav class="main" aria-label="Main">
           <a href="#solver">Solver</a>
           <a href="#all-maths">All Maths</a>
-          <a href="#books">Books</a>
+          <a href="#books">Files</a>
           <a href="#smart-syllabus">Smart Syllabus</a>
           <a href="#mcq-book">MCQ Book</a>
           <a href="#lessons">Lessons</a>
@@ -1051,10 +1061,14 @@
 
 <section class="block" id="books" aria-labelledby="books-heading">
           <div class="sec-head">
-            <h2 id="books-heading">PECTAA Books — Matric &amp; FSc Maths Textbooks</h2>
-            <p>The Punjab (PECTAA / Punjab Textbook Board) maths books, class by class, with every chapter listed. MathsGuru's own chapter notes — key ideas, formulas and a solved example for each chapter — are downloadable as PDF for every chapter, and as one combined PDF for each whole book. The complete Class 10 PECTAA textbook (248 pages) and the complete Class 11 PECTAA textbook (312 pages) are also here in full — read them on this page or download them from the Class 10 and Class 11 books below.</p>
+            <h2 id="books-heading">Files — PECTAA Maths Books, Chapters &amp; Exercises</h2>
+            <p>The Punjab (PECTAA / Punjab Textbook Board) maths books, class by class. For the Class 9 and Class 10 books, MathsGuru's own chapter notes — key ideas, formulas and a solved example for each chapter — are downloadable as PDF for every chapter, and as one combined PDF for each whole book; the complete Class 10 PECTAA textbook (248 pages) is also here in full. In the <b>Maths</b> area below, the Math 11 and Math 12 books are given chapter by chapter: read a whole chapter as one PDF, or open any single exercise as its own PDF.</p>
           </div>
           <div id="bookList"></div>
+          <h3 style="font-size:1.45rem;font-weight:900;margin:38px 0 0;">Maths</h3>
+          <p style="color:var(--ink-soft);margin:8px 0 0;">The two FSc maths books, file by file. Open a book&rsquo;s chapter to read the whole chapter as one PDF, or pick a single exercise &mdash; each exercise is its own PDF.</p>
+          <div id="fileBookList"></div>
+          <p style="color:var(--ink-soft);margin:18px 0 0;"><b>Note:</b> every chapter and exercise PDF opens in a new tab. If a PDF shows blank inside WhatsApp, open this page in Chrome (&#8943; menu &rarr; &ldquo;Open in browser&rdquo;) and tap the link there.</p>
         </section>
 
         <section class="block" id="quiz" aria-labelledby="quiz-heading">
@@ -1600,7 +1614,7 @@
             </details>
             <details class="faq-item">
               <summary>Where are the PECTAA Matric and FSc book chapters?</summary>
-              <p>In the <a href="#books">Books section</a> — the Class 9, Class 10, Class 11 and Class 12 PECTAA maths textbooks with every chapter listed and MathsGuru's chapter notes downloadable as PDF.</p>
+              <p>In the <a href="#books">Files section</a> — the Class 9 and Class 10 PECTAA maths textbooks with MathsGuru's chapter notes downloadable as PDF, and the Math 11 and Math 12 books with every chapter and every exercise as its own PDF.</p>
             </details>
             <details class="faq-item">
               <summary>What is a group, in maths?</summary>
@@ -3760,32 +3774,7 @@
           ["Chords and Arcs", "Arcs, central angles, and the correspondence between congruent arcs and congruent chords.", "Equal chords subtend equal angles at the centre."],
           ["Angle in a Segment of a Circle", "The central angle theorem, angles in the same segment, and cyclic quadrilaterals.", "The angle at the centre is twice the angle at the circumference on the same arc; opposite angles of a cyclic quadrilateral sum to 180 degrees."],
           ["Practical Geometry — Circles", "Constructing circles through given points and tangents to a circle from an external point.", "The centre of a circle through two points lies on the perpendicular bisector of the segment joining them."]
-        ], fullBook: { url: "assets/10th_Maths_PECTAA_Textbook.pdf", name: "10th_Maths_PECTAA_Textbook.pdf", title: "Class 10 Maths — PECTAA Textbook (248 pages)", pages: "248 pages" } },
-        { id: "f11", title: "FSc — Class 11 Maths (PECTAA)", chapters: [
-          ["Number Systems", "Real numbers and their properties, complex numbers, and the axioms of order.", "i^2 = -1; the conjugate of a + bi is a - bi; modulus = sqrt(a^2 + b^2)."],
-          ["Sets, Functions and Groups", "Sets, relations, functions (injective, surjective, bijective), binary operations and the definition of a group.", "A group needs closure, associativity, an identity and inverses."],
-          ["Matrices and Determinants", "Matrix operations, determinants up to order 3, adjoints, inverses, Cramer's rule and solving linear systems.", "det [[a, b], [c, d]] = ad - bc; A^-1 = adj(A) / det(A)."],
-          ["Quadratic Equations", "Roots and coefficients, nature of roots, remainder and factor theorems, synthetic division, and equations reducible to quadratics.", "For ax^2 + bx + c = 0: sum of roots = -b/a, product = c/a."],
-          ["Partial Fractions", "Resolving rational functions with linear, repeated and irreducible quadratic factors.", "Compare coefficients, or substitute convenient values of x, to find the unknown constants."],
-          ["Sequences and Series", "AP, GP and HP; arithmetic, geometric and harmonic means; sums of finite and infinite series.", "AP: a_n = a + (n - 1)d. GP: a_n = a r^(n-1); S_infinity = a/(1 - r) when |r| < 1."],
-          ["Permutations, Combinations and Probability", "Counting principles, nPr and nCr, and the probability of an event with the addition and multiplication rules.", "nPr = n!/(n - r)!; nCr = n!/(r! (n - r)!); P(E) = favourable outcomes / total outcomes."],
-          ["Mathematical Induction and Binomial Theorem", "The principle of mathematical induction; the binomial expansion, its general term and its middle term.", "General term of (a + b)^n: T(r+1) = nCr a^(n - r) b^r."],
-          ["Fundamentals of Trigonometry", "Angles in degrees and radians, arc length, trigonometric ratios and the signs of ratios in the four quadrants.", "Arc length l = r x theta with theta in radians; 180 degrees = pi radians."],
-          ["Trigonometric Identities", "Sum and difference formulas, double-angle and half-angle formulas, and product-to-sum / sum-to-product conversions.", "sin(A + B) = sin A cos B + cos A sin B; sin 2A = 2 sin A cos A."],
-          ["Trigonometric Functions and Their Graphs", "Graphs, periods and amplitudes of sin, cos, tan and the other trigonometric functions.", "sin x and cos x have period 2 pi; tan x has period pi."],
-          ["Application of Trigonometry", "Heights and distances, the laws of sines and cosines, area of a triangle, circumradius and inradius.", "Area of a triangle = (1/2) ab sin C; sine law: a / sin A = 2R."],
-          ["Inverse Trigonometric Functions", "Domains, ranges and properties of sin^-1, cos^-1 and tan^-1.", "sin^-1 x: domain [-1, 1], range [-pi/2, pi/2]."],
-          ["Solutions of Trigonometric Equations", "General solutions of equations involving sin, cos and tan.", "sin x = sin a gives x = n pi + (-1)^n a for integer n."]
-        ], fullBook: { url: "assets/11th_Maths_PECTAA_Textbook.pdf", name: "11th_Maths_PECTAA_Textbook.pdf", title: "Class 11 Maths — PECTAA Textbook (312 pages)", pages: "312 pages" } },
-        { id: "f12", title: "FSc — Class 12 Maths (PECTAA)", chapters: [
-          ["Functions and Limits", "Functions and inverse functions, the idea of a limit, standard limits and continuity.", "lim sin x / x = 1 as x -> 0; lim (e^x - 1)/x = 1 as x -> 0."],
-          ["Differentiation", "The derivative from first principles, rules of differentiation, the chain rule, implicit differentiation, higher derivatives, and maxima and minima.", "d/dx x^n = n x^(n - 1); product rule: (uv)' = u'v + uv'."],
-          ["Integration", "Indefinite and definite integrals, substitution, integration by parts, and areas under curves.", "Integral of x^n dx = x^(n+1)/(n + 1) + C; by parts: integral u dv = uv - integral v du."],
-          ["Introduction to Analytic Geometry", "The straight line: slope, equations of a line, angle between two lines, and the distance of a point from a line.", "Distance from (x1, y1) to the line ax + by + c = 0 is |a x1 + b y1 + c| / sqrt(a^2 + b^2)."],
-          ["Linear Inequalities and Linear Programming", "Graphing systems of linear inequalities, the feasible region, the objective function and the corner-point method.", "A linear objective over a polygonal feasible region reaches its optimum at a corner point."],
-          ["Conic Sections", "Circle, parabola, ellipse and hyperbola: standard equations, focus, directrix, eccentricity, tangents and normals.", "Ellipse x^2/a^2 + y^2/b^2 = 1: c^2 = a^2 - b^2 and e = c/a < 1."],
-          ["Vectors", "Vectors in the plane and in space, dot and cross products, the scalar triple product, and vector-valued functions (see the Exercise 11.1 lesson on MathsGuru).", "a . b = |a| |b| cos(theta); |a x b| = |a| |b| sin(theta)."]
-        ]}
+        ], fullBook: { url: "assets/10th_Maths_PECTAA_Textbook.pdf", name: "10th_Maths_PECTAA_Textbook.pdf", title: "Class 10 Maths — PECTAA Textbook (248 pages)", pages: "248 pages" } }
       ];
       function bookById(id) { for (var i = 0; i < BOOKS.length; i++) if (BOOKS[i].id === id) return BOOKS[i]; return null; }
       function chapterLines(book, idx) {
@@ -3826,6 +3815,88 @@
             ol.appendChild(li);
           });
           art.appendChild(tag); art.appendChild(h); art.appendChild(sub); art.appendChild(btnWrap); if (fullWrap) art.appendChild(fullWrap); art.appendChild(ol);
+          host.appendChild(art);
+        });
+      })();
+
+      /* ---------- Files: Maths books — chapter & exercise PDFs ----------
+         Data taken exactly from the chapter/exercise file lists for the
+         Math 11 (14 chapters, 52 exercises) and Math 12 (11 chapters, 43
+         exercises) PECTAA books. Every chapter PDF and every exercise PDF
+         opens in a NEW tab (target="_blank"). There are no Answers files,
+         so no Answers entry is listed or linked. */
+      var FILE_BOOKS = [
+        { title: "Math 11 — FSc Class 11 Maths (PECTAA)", chapters: [
+          { n: 1, title: "Complex Numbers", pdf: "11th-ch01-complex-numbers.pdf", exercises: [["Exercise 1.1", "11th-ch01-ex1-1-complex-numbers.pdf"], ["Exercise 1.2", "11th-ch01-ex1-2-complex-numbers.pdf"], ["Exercise 1.3", "11th-ch01-ex1-3-complex-numbers.pdf"], ["Exercise 1.4", "11th-ch01-ex1-4-complex-numbers.pdf"], ["Exercise 1.5", "11th-ch01-ex1-5-complex-numbers.pdf"]] },
+          { n: 2, title: "Functions and Graphs", pdf: "11th-ch02-functions-and-graphs.pdf", exercises: [["Exercise 2.1", "11th-ch02-ex2-1-functions-and-graphs.pdf"], ["Exercise 2.2", "11th-ch02-ex2-2-functions-and-graphs.pdf"]] },
+          { n: 3, title: "Theory of Quadratic Functions", pdf: "11th-ch03-theory-of-quadratic-functions.pdf", exercises: [["Exercise 3.1", "11th-ch03-ex3-1-theory-of-quadratic-functions.pdf"], ["Exercise 3.2", "11th-ch03-ex3-2-theory-of-quadratic-functions.pdf"]] },
+          { n: 4, title: "Matrices and Determinants", pdf: "11th-ch04-matrices-and-determinants.pdf", exercises: [["Exercise 4.1", "11th-ch04-ex4-1-matrices-and-determinants.pdf"], ["Exercise 4.2", "11th-ch04-ex4-2-matrices-and-determinants.pdf"], ["Exercise 4.3", "11th-ch04-ex4-3-matrices-and-determinants.pdf"]] },
+          { n: 5, title: "Partial Fractions", pdf: "11th-ch05-partial-fractions.pdf", exercises: [["Exercise 5.1", "11th-ch05-ex5-1-partial-fractions.pdf"], ["Exercise 5.2", "11th-ch05-ex5-2-partial-fractions.pdf"]] },
+          { n: 6, title: "Sequences and Series", pdf: "11th-ch06-sequences-and-series.pdf", exercises: [["Exercise 6.1", "11th-ch06-ex6-1-sequences-and-series.pdf"], ["Exercise 6.2", "11th-ch06-ex6-2-sequences-and-series.pdf"], ["Exercise 6.3", "11th-ch06-ex6-3-sequences-and-series.pdf"], ["Exercise 6.4", "11th-ch06-ex6-4-sequences-and-series.pdf"], ["Exercise 6.5", "11th-ch06-ex6-5-sequences-and-series.pdf"], ["Exercise 6.6", "11th-ch06-ex6-6-sequences-and-series.pdf"], ["Exercise 6.7", "11th-ch06-ex6-7-sequences-and-series.pdf"], ["Exercise 6.8", "11th-ch06-ex6-8-sequences-and-series.pdf"], ["Exercise 6.9", "11th-ch06-ex6-9-sequences-and-series.pdf"], ["Exercise 6.10", "11th-ch06-ex6-10-sequences-and-series.pdf"], ["Exercise 6.11", "11th-ch06-ex6-11-sequences-and-series.pdf"]] },
+          { n: 7, title: "Permutations and Combinations", pdf: "11th-ch07-permutations-and-combinations.pdf", exercises: [["Exercise 7.1", "11th-ch07-ex7-1-permutations-and-combinations.pdf"], ["Exercise 7.2", "11th-ch07-ex7-2-permutations-and-combinations.pdf"], ["Exercise 7.3", "11th-ch07-ex7-3-permutations-and-combinations.pdf"], ["Exercise 7.4", "11th-ch07-ex7-4-permutations-and-combinations.pdf"]] },
+          { n: 8, title: "Mathematical Induction and Binomial Theorem", pdf: "11th-ch08-mathematical-induction-and-binomial-theorem.pdf", exercises: [["Exercise 8.1", "11th-ch08-ex8-1-mathematical-induction-and-binomial-theorem.pdf"], ["Exercise 8.2", "11th-ch08-ex8-2-mathematical-induction-and-binomial-theorem.pdf"], ["Exercise 8.3", "11th-ch08-ex8-3-mathematical-induction-and-binomial-theorem.pdf"], ["Exercise 8.4", "11th-ch08-ex8-4-mathematical-induction-and-binomial-theorem.pdf"]] },
+          { n: 9, title: "Division of Polynomials", pdf: "11th-ch09-division-of-polynomials.pdf", exercises: [["Exercise 9.1", "11th-ch09-ex9-1-division-of-polynomials.pdf"], ["Exercise 9.2", "11th-ch09-ex9-2-division-of-polynomials.pdf"]] },
+          { n: 10, title: "Trigonometric Identities", pdf: "11th-ch10-trigonometric-identities.pdf", exercises: [["Exercise 10.1", "11th-ch10-ex10-1-trigonometric-identities.pdf"], ["Exercise 10.2", "11th-ch10-ex10-2-trigonometric-identities.pdf"], ["Exercise 10.3", "11th-ch10-ex10-3-trigonometric-identities.pdf"], ["Exercise 10.4", "11th-ch10-ex10-4-trigonometric-identities.pdf"]] },
+          { n: 11, title: "Trigonometric Functions and their Graphs", pdf: "11th-ch11-trigonometric-functions-and-their-graphs.pdf", exercises: [["Exercise 11.1", "11th-ch11-ex11-1-trigonometric-functions-and-their-graphs.pdf"], ["Exercise 11.2", "11th-ch11-ex11-2-trigonometric-functions-and-their-graphs.pdf"], ["Exercise 11.3", "11th-ch11-ex11-3-trigonometric-functions-and-their-graphs.pdf"]] },
+          { n: 12, title: "Limit and Continuity", pdf: "11th-ch12-limit-and-continuity.pdf", exercises: [["Exercise 12.1", "11th-ch12-ex12-1-limit-and-continuity.pdf"], ["Exercise 12.2", "11th-ch12-ex12-2-limit-and-continuity.pdf"], ["Exercise 12.3", "11th-ch12-ex12-3-limit-and-continuity.pdf"]] },
+          { n: 13, title: "Differentiation", pdf: "11th-ch13-differentiation.pdf", exercises: [["Exercise 13.1", "11th-ch13-ex13-1-differentiation.pdf"], ["Exercise 13.2", "11th-ch13-ex13-2-differentiation.pdf"], ["Exercise 13.3", "11th-ch13-ex13-3-differentiation.pdf"]] },
+          { n: 14, title: "Vectors in Space", pdf: "11th-ch14-vectors-in-space.pdf", exercises: [["Exercise 14.1", "11th-ch14-ex14-1-vectors-in-space.pdf"], ["Exercise 14.2", "11th-ch14-ex14-2-vectors-in-space.pdf"], ["Exercise 14.3", "11th-ch14-ex14-3-vectors-in-space.pdf"], ["Exercise 14.4", "11th-ch14-ex14-4-vectors-in-space.pdf"]] }
+        ] },
+        { title: "Math 12 — FSc Class 12 Maths (PECTAA)", chapters: [
+          { n: 1, title: "Graphical Representation of Functions", pdf: "12th-ch01-graphical-representation-of-functions.pdf", exercises: [["Exercise 1.1", "12th-ch01-ex1-1-graphical-representation-of-functions.pdf"], ["Exercise 1.2", "12th-ch01-ex1-2-graphical-representation-of-functions.pdf"], ["Exercise 1.3", "12th-ch01-ex1-3-graphical-representation-of-functions.pdf"], ["Exercise 1.4", "12th-ch01-ex1-4-graphical-representation-of-functions.pdf"], ["Exercise 1.5", "12th-ch01-ex1-5-graphical-representation-of-functions.pdf"]] },
+          { n: 2, title: "Further Differentiation", pdf: "12th-ch02-further-differentiation.pdf", exercises: [["Exercise 2.1", "12th-ch02-ex2-1-further-differentiation.pdf"], ["Exercise 2.2", "12th-ch02-ex2-2-further-differentiation.pdf"], ["Exercise 2.3", "12th-ch02-ex2-3-further-differentiation.pdf"], ["Exercise 2.4", "12th-ch02-ex2-4-further-differentiation.pdf"], ["Exercise 2.5", "12th-ch02-ex2-5-further-differentiation.pdf"], ["Exercise 2.6", "12th-ch02-ex2-6-further-differentiation.pdf"], ["Exercise 2.7", "12th-ch02-ex2-7-further-differentiation.pdf"]] },
+          { n: 3, title: "Integration", pdf: "12th-ch03-integration.pdf", exercises: [["Exercise 3.1", "12th-ch03-ex3-1-integration.pdf"], ["Exercise 3.2", "12th-ch03-ex3-2-integration.pdf"], ["Exercise 3.3", "12th-ch03-ex3-3-integration.pdf"], ["Exercise 3.4", "12th-ch03-ex3-4-integration.pdf"], ["Exercise 3.5", "12th-ch03-ex3-5-integration.pdf"], ["Exercise 3.6", "12th-ch03-ex3-6-integration.pdf"], ["Exercise 3.7", "12th-ch03-ex3-7-integration.pdf"]] },
+          { n: 4, title: "Differential Equations", pdf: "12th-ch04-differential-equations.pdf", exercises: [["Exercise 4.1", "12th-ch04-ex4-1-differential-equations.pdf"], ["Exercise 4.2", "12th-ch04-ex4-2-differential-equations.pdf"], ["Exercise 4.3", "12th-ch04-ex4-3-differential-equations.pdf"]] },
+          { n: 5, title: "Analytical Geometry", pdf: "12th-ch05-analytical-geometry.pdf", exercises: [["Exercise 5.1", "12th-ch05-ex5-1-analytical-geometry.pdf"], ["Exercise 5.2", "12th-ch05-ex5-2-analytical-geometry.pdf"], ["Exercise 5.3", "12th-ch05-ex5-3-analytical-geometry.pdf"]] },
+          { n: 6, title: "Conic Section", pdf: "12th-ch06-conic-section.pdf", exercises: [["Exercise 6.1", "12th-ch06-ex6-1-conic-section.pdf"], ["Exercise 6.2", "12th-ch06-ex6-2-conic-section.pdf"], ["Exercise 6.3", "12th-ch06-ex6-3-conic-section.pdf"], ["Exercise 6.4", "12th-ch06-ex6-4-conic-section.pdf"], ["Exercise 6.5", "12th-ch06-ex6-5-conic-section.pdf"], ["Exercise 6.6", "12th-ch06-ex6-6-conic-section.pdf"]] },
+          { n: 7, title: "Kinematics of Motion in a Straight Line", pdf: "12th-ch07-kinematics.pdf", exercises: [["Exercise 7.1", "12th-ch07-ex7-1-kinematics.pdf"]] },
+          { n: 8, title: "Numerical Solutions of Nonlinear Equations", pdf: "12th-ch08-numerical-method.pdf", exercises: [["Exercise 8.1", "12th-ch08-ex8-1-numerical-method.pdf"], ["Exercise 8.2", "12th-ch08-ex8-2-numerical-method.pdf"], ["Exercise 8.3", "12th-ch08-ex8-3-numerical-method.pdf"], ["Exercise 8.4", "12th-ch08-ex8-4-numerical-method.pdf"]] },
+          { n: 9, title: "Inverse Trigonometric Functions and Their Graphs", pdf: "12th-ch09-inverse-trigonometric-functions.pdf", exercises: [["Exercise 9.1", "12th-ch09-ex9-1-inverse-trigonometric-functions.pdf"], ["Exercise 9.2", "12th-ch09-ex9-2-inverse-trigonometric-functions.pdf"]] },
+          { n: 10, title: "Solution of Trigonometric Equations", pdf: "12th-ch10-solution-of-trigonometric-equations.pdf", exercises: [["Exercise 10.1", "12th-ch10-ex10-1-solution-of-trigonometric-equations.pdf"], ["Exercise 10.2", "12th-ch10-ex10-2-solution-of-trigonometric-equations.pdf"]] },
+          { n: 11, title: "Vector Valued Functions and Their Derivatives", pdf: "12th-ch11-vector-valued-functions.pdf", exercises: [["Exercise 11.1", "12th-ch11-ex11-1-vector-valued-functions.pdf"], ["Exercise 11.2", "12th-ch11-ex11-2-vector-valued-functions.pdf"], ["Exercise 11.3", "12th-ch11-ex11-3-vector-valued-functions.pdf"]] }
+        ] }
+      ];
+      (function renderFileBooks() {
+        var host = $("fileBookList");
+        if (!host) return;
+        FILE_BOOKS.forEach(function (book) {
+          var totalEx = 0;
+          book.chapters.forEach(function (ch) { totalEx += ch.exercises.length; });
+          var art = document.createElement("article");
+          art.className = "lesson";
+          var tag = document.createElement("span"); tag.className = "lesson-tag"; tag.textContent = "PECTAA Textbook";
+          var h = document.createElement("h3"); h.textContent = book.title;
+          var sub = document.createElement("p"); sub.className = "lesson-sub";
+          sub.textContent = book.chapters.length + " chapters · " + totalEx + " exercises. Tap a chapter to see its exercises; the chapter and exercise PDFs each open in a new tab.";
+          art.appendChild(tag); art.appendChild(h); art.appendChild(sub);
+          var wrap = document.createElement("div"); wrap.className = "file-chapters";
+          book.chapters.forEach(function (ch) {
+            var row = document.createElement("div"); row.className = "file-chapter";
+            var head = document.createElement("div"); head.className = "file-chapter-head";
+            var toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "file-chapter-toggle";
+            toggle.setAttribute("aria-expanded", "false");
+            toggle.innerHTML = '<span class="file-caret" aria-hidden="true">\u25B8</span>';
+            toggle.appendChild(document.createTextNode("Chapter " + ch.n + ": " + ch.title + " (" + ch.exercises.length + (ch.exercises.length === 1 ? " exercise" : " exercises") + ")"));
+            var chLink = document.createElement("a"); chLink.className = "btn"; chLink.href = "assets/" + ch.pdf;
+            chLink.target = "_blank"; chLink.rel = "noopener"; chLink.textContent = "Read full chapter (PDF)";
+            head.appendChild(toggle); head.appendChild(chLink);
+            var ul = document.createElement("ul"); ul.className = "file-exercises"; ul.hidden = true;
+            ch.exercises.forEach(function (ex) {
+              var li = document.createElement("li");
+              var a = document.createElement("a"); a.href = "assets/exercises/" + ex[1];
+              a.target = "_blank"; a.rel = "noopener"; a.textContent = ex[0] + " (PDF)";
+              li.appendChild(a); ul.appendChild(li);
+            });
+            toggle.addEventListener("click", function () {
+              var open = ul.hidden;
+              ul.hidden = !open;
+              toggle.setAttribute("aria-expanded", open ? "true" : "false");
+              toggle.querySelector(".file-caret").textContent = open ? "\u25BE" : "\u25B8";
+            });
+            row.appendChild(head); row.appendChild(ul);
+            wrap.appendChild(row);
+          });
+          art.appendChild(wrap);
           host.appendChild(art);
         });
       })();
