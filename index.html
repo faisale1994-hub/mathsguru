@@ -186,6 +186,44 @@
       .solver-note { margin-top: 14px; font-size: .9rem; color: var(--ink-soft); background: var(--amber-soft); border-radius: 10px; padding: 12px 14px; display: none; }
       .solver-note.show { display: block; }
 
+      /* Solver graph (drawn under the worked solution) */
+      .solver-graph { margin-top: 22px; }
+      .graph-heading { font-family: "Public Sans", sans-serif; font-size: 1.05rem; font-weight: 800; margin: 0; }
+      .graph-heading span { color: var(--ink-soft); font-weight: 600; font-size: .9rem; }
+      .graph-plot { background: var(--bg-soft); border-radius: 14px; padding: 14px 10px 8px; margin-top: 10px; text-align: center; color: var(--ink); }
+      .graph-plot svg { max-width: 100%; height: auto; }
+      .graph-cap { color: var(--ink-soft); font-size: .93rem; margin: 10px 0 0; }
+      .graph-cap .math { color: var(--ink); }
+
+      /* Find a solution (book / exercise / question finder) */
+      .finder-card {
+        background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+        box-shadow: var(--shadow); padding: 26px; margin: 26px auto 0; max-width: 820px; text-align: left;
+      }
+      .finder-card h2 { font-size: 1.45rem; font-weight: 900; margin: 0; }
+      .finder-card .finder-sub { color: var(--ink-soft); margin: 8px 0 0; }
+      .finder-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 18px; }
+      .finder-grid label, .finder-text-label { font-weight: 800; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); display: block; }
+      .finder-grid select, .finder-grid input, .finder-row input {
+        font: inherit; font-size: 1rem; font-weight: 500; letter-spacing: 0; text-transform: none;
+        width: 100%; margin-top: 7px; padding: 11px 13px; border-radius: 11px;
+        border: 2px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0;
+      }
+      .finder-grid select:focus, .finder-grid input:focus, .finder-row input:focus { outline: none; border-color: var(--accent); }
+      .finder-row { display: flex; gap: 10px; margin-top: 14px; }
+      .finder-row input { flex: 1; margin-top: 0; }
+      .finder-text-label { margin-top: 16px; }
+      .finder-out { margin-top: 16px; }
+      .finder-out:empty { display: none; }
+      .finder-hit { background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; }
+      .finder-hit b { display: block; font-size: 1.02rem; }
+      .finder-hit p { margin: 5px 0 0; color: var(--ink-soft); font-size: .93rem; }
+      .finder-hit .btn { margin-top: 10px; }
+      .finder-miss { background: var(--amber-soft); border-radius: 12px; padding: 14px 16px; font-size: .95rem; }
+      .finder-miss b { display: block; margin-bottom: 3px; }
+      .qa-found { background: var(--amber-soft); border-radius: 12px; box-shadow: 0 0 0 3px var(--amber); padding-left: 12px; padding-right: 12px; transition: background .4s ease, box-shadow .4s ease; }
+      article.lesson, .qa { scroll-margin-top: 96px; }
+
       /* Solver file upload: photo or PDF of a question */
       .upload-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
       .upload-hint { font-size: .88rem; color: var(--ink-soft); }
@@ -482,6 +520,7 @@
             <button class="chip" type="button" data-q="domain of sqrt(x) + ln(x)">domain of √x + ln x</button>
             <button class="chip" type="button" data-q="solve 3x + 7 = 22">solve 3x + 7 = 22</button>
             <button class="chip" type="button" data-q="factor x^2 - x - 12">factor x² − x − 12</button>
+            <button class="chip" type="button" data-q="draw the graph of y = e^x">draw the graph of y = eˣ</button>
           </div>
           <div class="solver-out" id="solverOut" aria-live="polite">
             <div class="method-banner" id="methodBanner" hidden>
@@ -499,8 +538,44 @@
               <div class="a-label">Final answer</div>
               <div class="a-value" id="answerValue"></div>
             </div>
+            <div class="solver-graph" id="solverGraph" hidden>
+              <h3 class="graph-heading">Graph <span>— roots, intercepts and vertex marked</span></h3>
+              <div class="graph-plot" id="solverGraphBox"></div>
+              <p class="graph-cap" id="solverGraphCap"></p>
+            </div>
             <div class="solver-note" id="solverNote"></div>
           </div>
+        </section>
+
+        <section class="finder-card" id="finder" aria-labelledby="finder-heading">
+          <h2 id="finder-heading">Find a solution</h2>
+          <p class="finder-sub">Already know the book, exercise and question? Pick them here and MathsGuru jumps straight to that solved question in the lessons below — for example <b>2nd Year Maths · Exercise 11.1 · Q5</b>.</p>
+          <form id="finderForm">
+            <div class="finder-grid">
+              <label for="finderBook">Class / Book
+                <select id="finderBook">
+                  <option value="">Any book / lesson</option>
+                  <option value="exercise-11-1">2nd Year Maths — Chapter 11</option>
+                  <option value="domain-of-ex">FSc Maths — Functions</option>
+                  <option value="linear-algebra">Linear Algebra (BS)</option>
+                  <option value="calculus">Calculus</option>
+                  <option value="group-theory">Group Theory (BS)</option>
+                </select>
+              </label>
+              <label for="finderExercise">Exercise
+                <input id="finderExercise" type="text" autocomplete="off" placeholder="e.g. Exercise 11.1" />
+              </label>
+              <label for="finderQuestion">Question
+                <input id="finderQuestion" type="text" autocomplete="off" placeholder="e.g. Q5" />
+              </label>
+            </div>
+            <label class="finder-text-label" for="finderText">Or search by typing</label>
+            <div class="finder-row">
+              <input id="finderText" type="search" autocomplete="off" placeholder="e.g. Exercise 11.1 Q5 · domain of e^x · eigenvalues" aria-label="Search solved questions by typing" />
+              <button class="btn primary large" type="submit">Search</button>
+            </div>
+          </form>
+          <div class="finder-out" id="finderOut" aria-live="polite"></div>
         </section>
 
         <section class="block" aria-labelledby="topics-heading">
@@ -2218,6 +2293,18 @@
           return t;
         }
 
+        /* Graph requests first: "draw the graph of y = …", "plot y = …",
+           "graph of …", "draw x^2 − 5x + 6". Without this branch the
+           drawing verb reaches the expression parser and the question
+           fails with "Unknown name: draw". When the rest of the question
+           is plottable, answer with graph-working steps — renderGraph()
+           draws the graph itself under the answer. */
+        if (/\b(draw|plot|graph|sketch)\b/.test(low) || /^(y|f\s*\(\s*[a-z]\s*\))\s*=/.test(low)) {
+          var gSpec = null;
+          try { gSpec = extractPlot(original); } catch (e2) { gSpec = null; }
+          if (gSpec) return graphResult(gSpec);
+        }
+
         try {
           if (/domain/.test(low)) {
             var dExpr = cleanExpr(stripLead(s.replace(/.*domain\s*(of)?/i, ""), ["of", "the"]));
@@ -2312,6 +2399,7 @@
       /* ---------- tutor-style hints: think first, then the worked reasoning ---------- */
       function hintFor(raw) {
         var low = (raw || "").toLowerCase();
+        if (/\b(draw|plot|graph|sketch)\b/.test(low)) return "To draw a graph, hunt for the key points first: where the curve crosses the x-axis (the roots), where it crosses the y-axis (put x = 0), and the turning point (vertex) if it is a parabola. Then join the points with one smooth curve.";
         if (/domain/.test(low)) return "Hunt for the three troublemakers: a denominator that could become 0, a square root of a negative number, and a logarithm of 0 or a negative number. Remember: e to any power never causes trouble — it accepts every real number.";
         if (/range/.test(low)) return "Turn the question around: instead of 'what goes in?', ask 'what can come out?' Squares and e-powers are never negative, square roots start at 0, and ln can output any real number at all.";
         if (/differentiate|derivative/.test(low)) return "Use the power rule on each term separately: bring the power down in front, then reduce the power by 1. Constant terms have no x, so they differentiate to 0.";
@@ -2342,11 +2430,12 @@
         } else { hintBox.hidden = true; }
         note.classList.remove("show");
         note.textContent = "";
-        if (!res) { methodBanner.hidden = true; stepsHeading.hidden = true; answerBanner.hidden = false; $("answerValue").textContent = "—"; $("stepsList").innerHTML = ""; return; }
+        if (!res) { methodBanner.hidden = true; stepsHeading.hidden = true; answerBanner.hidden = false; $("answerValue").textContent = "—"; $("stepsList").innerHTML = ""; hideSolverGraph(); return; }
         if (res.unsupported) {
           methodBanner.hidden = true; stepsHeading.hidden = true; answerBanner.hidden = false;
           $("answerValue").textContent = "Hmm — try a supported format";
           $("stepsList").innerHTML = "";
+          hideSolverGraph();
           note.textContent = res.unsupported;
           note.classList.add("show");
           if (res.fixChar) {
@@ -2387,6 +2476,529 @@
         $("stepsList").innerHTML = (res.steps || []).map(function (st, i) {
           return "<li><h4>Step " + (i + 1) + " — " + st.h + "</h4>" + (st.p ? "<p>" + st.p + "</p>" : "") + (st.fx ? "<span class='fx'>" + st.fx + "</span>" : "") + "</li>";
         }).join("");
+        renderGraph(raw);
+      }
+
+      /* ---------- solver graph: draw the function with the answer ----------
+         Pure inline SVG — no library and no network — so it also works
+         offline inside the app WebView. extractPlot() decides whether the
+         question has anything plottable; buildGraphSVG() renders it with
+         the roots, y-intercept and (for a parabola) the vertex marked. */
+      function hideSolverGraph() {
+        var box = $("solverGraph");
+        if (!box) return;
+        box.hidden = true;
+        $("solverGraphBox").innerHTML = "";
+        $("solverGraphCap").innerHTML = "";
+      }
+      function plotNormalize(raw) {
+        return String(raw || "").trim()
+          .replace(/™\s*(\d)?/g, function (m, d) { return "^" + (d || "2"); })
+          .replace(/²/g, "^2").replace(/³/g, "^3").replace(/√/g, "sqrt")
+          .replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/–/g, "-")
+          .replace(/e\^\(([^()]*)\)/g, "exp($1)")
+          .replace(/e\^([a-z0-9]+)/g, "exp($1)")
+          /* bare function calls as students write them — "sin x", "ln x",
+             "sqrtx", "sin 2x" — get the brackets the parser needs */
+          .replace(/\b(sqrt|ln|log|sin|cos|tan)\s+(\d+(?:\.\d+)?)([a-z])(?![a-z(])/g, "$1($2$3)")
+          .replace(/\b(sqrt|ln|log|sin|cos|tan)\s+([a-z])(?![a-z(])/g, "$1($2)")
+          .replace(/\b(sqrt|ln|log|sin|cos|tan)([a-z])(?![a-z])/g, "$1($2)");
+      }
+      function plotParse(str) {
+        try { return parseExpression(str); } catch (e) { return null; }
+      }
+      /* Tolerant side-cleaning, the same idea as the solver's cleanSide:
+         drop trailing instruction words ("0 Find the roots.") one at a time
+         until the side parses. */
+      function plotCleanSide(sideStr) {
+        var t = cleanExpr(sideStr);
+        if (plotParse(t)) return t;
+        var cand = t;
+        while (/\s/.test(cand)) {
+          var next = cand.replace(/\s+[A-Za-z]+\.?$/, "").trim();
+          if (!next || next === cand) break;
+          cand = next;
+          if (plotParse(cand)) return cand;
+        }
+        return t;
+      }
+      function exprText(n, v) {
+        if (!n) return "";
+        switch (n.k) {
+          case "num": return fmtNum(n.v);
+          case "var": return v;
+          case "neg": return "−" + exprText(n.a, v);
+          case "fn":
+            if (n.name === "exp") return "e^" + exprText(n.a, v);
+            if (n.name === "sqrt") return "√" + exprText(n.a, v);
+            return n.name + "(" + exprText(n.a, v) + ")";
+          case "bin":
+            var l = exprText(n.l, v), r = exprText(n.r, v);
+            if (n.op === "*") return l + "·" + r;
+            if (n.op === "-") return l + " − " + r;
+            if (n.op === "+") return l + " + " + r;
+            if (n.op === "/") return l + "/" + r;
+            if (n.op === "^") return l + "^" + r;
+            return l + n.op + r;
+        }
+        return "";
+      }
+      function polyText(p, v) {
+        var degs = Object.keys(p).map(Number).filter(function (d) { return Math.abs(p[d]) > 1e-12; }).sort(function (a, b) { return b - a; });
+        if (!degs.length) return "0";
+        var out = "";
+        degs.forEach(function (d, i) {
+          var c = p[d], ac = Math.abs(c);
+          var term = d === 0 ? fmtNum(ac) : ((ac === 1 ? "" : fmtNum(ac)) + v + (d > 1 ? "^" + d : ""));
+          out += (i === 0 ? (c < 0 ? "−" : "") : (c < 0 ? " − " : " + ")) + term;
+        });
+        return out;
+      }
+      function prettyLabel(txt) {
+        return txt.replace(/\^2/g, "²").replace(/\^3/g, "³").replace(/\s+/g, " ").trim();
+      }
+      /* The solver result for a draw/plot/graph request: the working is
+         "find the key points, then draw" — the roots, y-intercept and
+         vertex it names are exactly the points marked on the graph. */
+      function graphResult(spec) {
+        var marks = computeMarks(spec);
+        var v = spec.v;
+        var steps = [{ h: "Write the function to draw", p: "The graph shows every point (" + v + ", y) with y worked out from this function:", fx: "y = " + spec.labelHTML }];
+        if (spec.poly && polyDegree(spec.poly) === 2) {
+          var bq = spec.poly[1] || 0, cq = spec.poly[0] || 0;
+          var dq = bq * bq - 4 * spec.poly[2] * cq;
+          if (marks.roots.length) {
+            steps.push({ h: "Find the roots — where the curve crosses the " + v + "-axis", p: "Set y = 0 and solve (the discriminant is D = " + fmtNum(dq) + "). The curve crosses the axis at:", fx: marks.roots.map(function (r) { return v + " = " + fmtNum(r); }).join(" &nbsp;·&nbsp; ") });
+          } else {
+            steps.push({ h: "Check for roots", p: "Set y = 0 and check the discriminant: D = " + fmtNum(dq) + " < 0, so the curve never crosses the " + v + "-axis — there are no real roots to mark.", fx: "D = " + fmtNum(dq) + " < 0" });
+          }
+        } else if (marks.roots.length) {
+          steps.push({ h: "Find the roots — where the curve crosses the " + v + "-axis", p: "Solving y = 0 (numerically where a formula is not available) gives the crossing points marked on the graph:", fx: marks.roots.map(function (r) { return v + " = " + fmtNum(r); }).join(" &nbsp;·&nbsp; ") });
+        } else {
+          steps.push({ h: "Check for roots", p: "This curve never crosses the " + v + "-axis in the drawn window, so there are no roots to mark.", fx: "y ≠ 0 on the graph" });
+        }
+        if (marks.yInt !== null) steps.push({ h: "Find the y-intercept", p: "Put " + v + " = 0 into the function — where the curve crosses the y-axis:", fx: "y = " + fmtNum(marks.yInt) + " &nbsp;→&nbsp; point (0, " + fmtNum(marks.yInt) + ")" });
+        if (marks.vertex) steps.push({ h: "Find the vertex (turning point)", p: "For a parabola the vertex sits halfway between the roots, at " + v + " = −b/2a:", fx: "vertex = (" + fmtNum(marks.vertex.x) + ", " + fmtNum(marks.vertex.y) + ")" });
+        steps.push({ h: "Draw the curve", p: "Join the marked points with one smooth curve — the finished graph is drawn below the answer.", fx: "y = " + spec.labelHTML });
+        var bits = [];
+        if (marks.roots.length) bits.push("roots " + marks.roots.map(function (r) { return v + " = " + fmtNum(r); }).join(", "));
+        if (marks.yInt !== null) bits.push("y-intercept (0, " + fmtNum(marks.yInt) + ")");
+        if (marks.vertex) bits.push("vertex (" + fmtNum(marks.vertex.x) + ", " + fmtNum(marks.vertex.y) + ")");
+        return { method: "Drawing the Graph", methodWhy: "To draw a graph: find where the curve crosses the axes (the roots and the y-intercept), find the turning point if there is one, then join the points with a smooth curve.", answer: bits.length ? bits.join(" · ") : "Graph drawn below", steps: steps };
+      }
+      /* Decide what (if anything) to plot for a question. Returns
+         { ast, fn, v, poly, label, labelHTML } or null when the question
+         has no plottable function — domain/range questions, calculus
+         operations, word problems and plain arithmetic get no graph. */
+      function extractPlot(raw) {
+        if (!raw) return null;
+        var s = plotNormalize(raw);
+        var low = s.toLowerCase();
+        var v = detectVar(low);
+        if (/domain|range|differentiate|derivative|integrate|integral|factor|simplif/.test(low)) return null;
+        var wantsGraph = /\b(graph|plot|draw|sketch)\b/.test(low);
+        var ast = null;
+        if (s.indexOf("=") >= 0) {
+          var body = s.replace(/^(solve|find x in|find t in)\s+/i, "");
+          var sides = body.split("=");
+          if (sides.length === 2) {
+            var L = plotCleanSide(sides[0]), R = plotCleanSide(sides[1]);
+            var isY = function (x) { return /^(y|f\s*\(\s*[a-z]\s*\))$/i.test(x.trim()); };
+            if (isY(L)) { var ra = plotParse(R); if (ra && hasVar(ra)) ast = ra; }
+            else if (isY(R)) { var la2 = plotParse(L); if (la2 && hasVar(la2)) ast = la2; }
+            else {
+              var la = plotParse(L), rb = plotParse(R);
+              if (la && rb) {
+                var diffAst = { k: "bin", op: "-", l: la, r: rb };
+                var dp = toPoly(diffAst);
+                if (dp && polyDegree(dp) >= 1 && polyDegree(dp) <= 3) ast = diffAst;
+                else if (wantsGraph && hasVar(la)) ast = la;
+              } else if (la && hasVar(la) && /\d/.test(R)) {
+                /* the other side was a number buried in photo-reader junk */
+                ast = la;
+              }
+            }
+          }
+        }
+        if (!ast && wantsGraph) {
+          var g = s.replace(/^.*?\b(?:graph|plot|draw|sketch)\b/i, "");
+          var prevG = null;
+          while (prevG !== g) {
+            prevG = g;
+            g = g.replace(/^\s*(?:graph|plot|draw|sketch|of|the|a|an)\b\s*/i, "");
+          }
+          if (g.indexOf("=") >= 0) {
+            var gs = g.split("=");
+            if (gs.length === 2) {
+              var gy = /^(y|f\s*\(\s*[a-z]\s*\))$/i.test(gs[0].trim()) ? gs[1] : (/^(y|f\s*\(\s*[a-z]\s*\))$/i.test(gs[1].trim()) ? gs[0] : null);
+              if (gy) { var ga = plotParse(plotCleanSide(gy)); if (ga && hasVar(ga)) ast = ga; }
+            }
+          }
+          if (!ast) { var gb = plotParse(plotCleanSide(g)); if (gb && hasVar(gb)) ast = gb; }
+        }
+        if (!ast) return null;
+        var poly = toPoly(ast);
+        if (poly && polyDegree(poly) > 3) return null;
+        var fn = function (x) {
+          try { var y = evalAST(ast, x); return (typeof y === "number" && isFinite(y)) ? y : NaN; } catch (e) { return NaN; }
+        };
+        return {
+          ast: ast, fn: fn, v: v, poly: poly,
+          label: prettyLabel(poly ? polyText(poly, v) : exprText(ast, v)),
+          labelHTML: poly ? polyToHTML(poly, v) : exprHTML(ast, v)
+        };
+      }
+      function quadRoots(p) {
+        var a = p[2], b = p[1] || 0, c = p[0] || 0;
+        var D = b * b - 4 * a * c;
+        if (D < -1e-12) return [];
+        if (Math.abs(D) <= 1e-12) return [-b / (2 * a)];
+        var sq = Math.sqrt(D);
+        return [(-b - sq) / (2 * a), (-b + sq) / (2 * a)].sort(function (m, n) { return m - n; });
+      }
+      function plotWindow(spec) {
+        var p = spec.poly;
+        if (p) {
+          var deg = polyDegree(p);
+          if (deg === 2) {
+            var xv = -(p[1] || 0) / (2 * p[2]);
+            var lo = xv - 3.4, hi = xv + 3.4;
+            quadRoots(p).forEach(function (r) { lo = Math.min(lo, r - 1.3); hi = Math.max(hi, r + 1.3); });
+            return [lo, hi];
+          }
+          if (deg === 1) { var r0 = -(p[0] || 0) / p[1]; return [r0 - 5, r0 + 5]; }
+          if (deg === 3) return [-5, 5];
+        }
+        var t = spec.label;
+        if (/e\^|exp/.test(t)) return [-3.2, 2.4];
+        if (/ln|log/.test(t)) return [0.05, 5.5];
+        if (/sin|cos|tan/.test(t)) return [-6.6, 6.6];
+        if (/√|sqrt/.test(t)) return [-0.6, 6.5];
+        return [-5, 5];
+      }
+      /* Root-finding by sign change + bisection. A bracket whose midpoint
+         is undefined (e.g. either side of the 1/x asymptote) is abandoned,
+         so a jump across an asymptote is never mistaken for a root. */
+      function numericRoots(spec, x0, x1) {
+        var roots = [], N = 400, prevX = x0, prevY = spec.fn(x0), i, x, y;
+        for (i = 1; i <= N; i++) {
+          x = x0 + (x1 - x0) * i / N; y = spec.fn(x);
+          if (isFinite(prevY) && prevY === 0) roots.push(prevX);
+          if (isFinite(prevY) && isFinite(y) && prevY * y < 0) {
+            var lo = prevX, hi = x, flo = prevY, ok = true, k;
+            for (k = 0; k < 60; k++) {
+              var mid = (lo + hi) / 2, fm = spec.fn(mid);
+              if (!isFinite(fm)) { ok = false; break; }
+              if (flo * fm <= 0) hi = mid; else { lo = mid; flo = fm; }
+            }
+            if (ok) { var r = (lo + hi) / 2; if (Math.abs(spec.fn(r)) < 1e-3) roots.push(r); }
+          }
+          prevX = x; prevY = y;
+        }
+        roots.sort(function (m, n) { return m - n; });
+        return roots.filter(function (r, i) { return i === 0 || Math.abs(r - roots[i - 1]) > 0.02; });
+      }
+      function computeMarks(spec) {
+        var win = plotWindow(spec), x0 = win[0], x1 = win[1];
+        var roots;
+        if (spec.poly && polyDegree(spec.poly) === 2) roots = quadRoots(spec.poly);
+        else if (spec.poly && polyDegree(spec.poly) === 1) roots = [-(spec.poly[0] || 0) / spec.poly[1]];
+        else roots = numericRoots(spec, x0, x1);
+        roots = roots.filter(function (r) { return r >= x0 - 1e-9 && r <= x1 + 1e-9; });
+        var vertex = null;
+        if (spec.poly && polyDegree(spec.poly) === 2) {
+          var vx = -(spec.poly[1] || 0) / (2 * spec.poly[2]);
+          vertex = { x: vx, y: spec.fn(vx) };
+        }
+        var yInt = null;
+        if (x0 <= 0 && x1 >= 0) { var y0 = spec.fn(0); if (isFinite(y0)) yInt = y0; }
+        return { roots: roots, vertex: vertex, yInt: yInt };
+      }
+      function buildGraphSVG(spec) {
+        var win = plotWindow(spec), x0 = win[0], x1 = win[1];
+        var fn = spec.fn, v = spec.v;
+        var ys = [], N = 240, i, x, y;
+        for (i = 0; i <= N; i++) { y = fn(x0 + (x1 - x0) * i / N); if (isFinite(y)) ys.push(y); }
+        if (!ys.length) return "";
+        /* percentile-clamp the y-range so an asymptote (1/x, tan x) cannot
+           flatten the rest of the curve */
+        var sorted = ys.slice().sort(function (a, b) { return a - b; });
+        var yLo = sorted[Math.floor(sorted.length * 0.01)], yHi = sorted[Math.ceil(sorted.length * 0.99) - 1];
+        if (!(yHi > yLo)) { yLo = sorted[0]; yHi = sorted[sorted.length - 1]; }
+        if (!(yHi > yLo)) yHi = yLo + 1;
+        var pad = (yHi - yLo) * 0.18 + 0.4;
+        var yMin = yLo - pad, yMax = yHi + pad;
+        if (yMin > 0 && yLo < yHi - yLo) yMin = -(yHi - yLo) * 0.25;
+        if (yMax < 0 && -yHi < yHi - yLo) yMax = (yHi - yLo) * 0.25;
+        var W = 560, H = 340, L = 48, R = 16, T = 18, B = 38;
+        var PW = W - L - R, PH = H - T - B;
+        function X(xv) { return L + (xv - x0) / (x1 - x0) * PW; }
+        function Y(yv) { return T + (yMax - yv) / (yMax - yMin) * PH; }
+        function niceStep(raw) {
+          var pow = Math.pow(10, Math.floor(Math.log10(raw)));
+          var m = raw / pow;
+          return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * pow;
+        }
+        var parts = [];
+        parts.push('<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Graph of y = ' + spec.label + '">');
+        var sx = niceStep((x1 - x0) / 8), sy = niceStep((yMax - yMin) / 6), gx, gy;
+        for (gx = Math.ceil(x0 / sx) * sx; gx <= x1 + 1e-9; gx += sx) {
+          parts.push('<line x1="' + X(gx).toFixed(1) + '" y1="' + T + '" x2="' + X(gx).toFixed(1) + '" y2="' + (T + PH) + '" stroke="currentColor" stroke-opacity=".12"/>');
+          if (Math.abs(gx) > 1e-9) parts.push('<text x="' + X(gx).toFixed(1) + '" y="' + (T + PH + 18) + '" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity=".7">' + fmtNum(gx) + '</text>');
+        }
+        for (gy = Math.ceil(yMin / sy) * sy; gy <= yMax + 1e-9; gy += sy) {
+          parts.push('<line x1="' + L + '" y1="' + Y(gy).toFixed(1) + '" x2="' + (L + PW) + '" y2="' + Y(gy).toFixed(1) + '" stroke="currentColor" stroke-opacity=".12"/>');
+          if (Math.abs(gy) > 1e-9) parts.push('<text x="' + (L - 6) + '" y="' + (Y(gy) + 4).toFixed(1) + '" font-size="11" text-anchor="end" fill="currentColor" fill-opacity=".7">' + fmtNum(gy) + '</text>');
+        }
+        var hasXAxis = yMin <= 0 && yMax >= 0, hasYAxis = x0 <= 0 && x1 >= 0;
+        var axisY = hasXAxis ? Y(0) : T + PH;
+        var axisX = hasYAxis ? X(0) : L;
+        parts.push('<line x1="' + L + '" y1="' + axisY.toFixed(1) + '" x2="' + (L + PW) + '" y2="' + axisY.toFixed(1) + '" stroke="currentColor" stroke-opacity=".55" stroke-width="1.5"/>');
+        parts.push('<line x1="' + axisX.toFixed(1) + '" y1="' + T + '" x2="' + axisX.toFixed(1) + '" y2="' + (T + PH) + '" stroke="currentColor" stroke-opacity=".55" stroke-width="1.5"/>');
+        parts.push('<text x="' + (L + PW - 2) + '" y="' + (axisY - 8).toFixed(1) + '" font-size="13" font-style="italic" text-anchor="end" fill="currentColor">' + v + '</text>');
+        parts.push('<text x="' + (axisX + 8).toFixed(1) + '" y="' + (T + 12) + '" font-size="13" font-style="italic" fill="currentColor">y</text>');
+        if (hasXAxis && hasYAxis) parts.push('<text x="' + (axisX - 6).toFixed(1) + '" y="' + (axisY + 16).toFixed(1) + '" font-size="11" text-anchor="end" fill="currentColor" fill-opacity=".7">0</text>');
+        /* the curve itself, split wherever the function is undefined or
+           jumps (asymptotes) */
+        var d = "", pen = false, prevPy = 0, M = 300;
+        for (i = 0; i <= M; i++) {
+          x = x0 + (x1 - x0) * i / M; y = fn(x);
+          if (!isFinite(y)) { pen = false; continue; }
+          var px = X(x), py = Y(y);
+          if (py < T - 60 || py > T + PH + 60) { pen = false; continue; }
+          if (pen && Math.abs(py - prevPy) > PH * 1.1) pen = false;
+          d += (pen ? " L " : " M ") + px.toFixed(1) + " " + py.toFixed(1);
+          pen = true; prevPy = py;
+        }
+        if (d) parts.push('<path d="' + d + '" fill="none" stroke="#0e7a5f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>');
+        /* marked points: roots, y-intercept, vertex — points landing on
+           the same spot (e.g. all three at the origin for y = x²) merge */
+        var marks = computeMarks(spec);
+        var pts = [];
+        marks.roots.forEach(function (r) { pts.push({ x: r, y: 0, kind: "root", label: v + " = " + fmtNum(r) }); });
+        if (marks.yInt !== null) pts.push({ x: 0, y: marks.yInt, kind: "yint", label: "(0, " + fmtNum(marks.yInt) + ")" });
+        if (marks.vertex) pts.push({ x: marks.vertex.x, y: marks.vertex.y, kind: "vertex", label: "vertex (" + fmtNum(marks.vertex.x) + ", " + fmtNum(marks.vertex.y) + ")" });
+        var merged = [];
+        pts.forEach(function (p) {
+          var found = null;
+          merged.forEach(function (q) { if (Math.abs(q.x - p.x) < 0.01 && Math.abs(q.y - p.y) < 0.01) found = q; });
+          if (found) found.label += " · " + p.label;
+          else merged.push({ x: p.x, y: p.y, kind: p.kind, label: p.label });
+        });
+        merged.forEach(function (p) {
+          var cx = X(p.x), cy = Y(p.y);
+          parts.push('<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4.5" fill="#d98e1c" stroke="#fff" stroke-width="1.2"/>');
+          var above = p.kind !== "vertex" || (spec.poly && spec.poly[2] < 0);
+          var ly = above ? cy - 10 : cy + 18;
+          var anchor = "middle", lx = cx;
+          if (p.kind === "yint" && cx < L + PW - 90) { anchor = "start"; lx = cx + 9; ly = cy - 8; }
+          if (anchor === "middle") lx = Math.max(L + 34, Math.min(L + PW - 34, lx));
+          parts.push('<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" font-size="12" font-weight="700" text-anchor="' + anchor + '" fill="currentColor">' + p.label + '</text>');
+        });
+        parts.push('<text x="' + (L + PW - 6) + '" y="' + (T + 14) + '" font-size="14" font-style="italic" text-anchor="end" fill="currentColor">y = ' + spec.label + '</text>');
+        parts.push('</svg>');
+        return parts.join("");
+      }
+      function graphCaption(spec) {
+        var marks = computeMarks(spec);
+        var bits = [];
+        if (marks.roots.length) bits.push("root" + (marks.roots.length > 1 ? "s" : "") + " at " + marks.roots.map(function (r) { return spec.v + " = " + fmtNum(r); }).join(" and "));
+        if (marks.yInt !== null) bits.push("y-intercept (0, " + fmtNum(marks.yInt) + ")");
+        if (marks.vertex) bits.push("vertex (" + fmtNum(marks.vertex.x) + ", " + fmtNum(marks.vertex.y) + ")");
+        var head = "Graph of <span class='math'>y = " + spec.labelHTML + "</span>";
+        return bits.length ? head + " — " + bits.join(" · ") + "." : head + ".";
+      }
+      function renderGraph(raw) {
+        var spec = null, svg = "";
+        try { spec = extractPlot(raw); } catch (e) { spec = null; }
+        if (spec) { try { svg = buildGraphSVG(spec); } catch (e) { svg = ""; } }
+        if (!spec || !svg) { hideSolverGraph(); return; }
+        $("solverGraphBox").innerHTML = svg;
+        $("solverGraphCap").innerHTML = graphCaption(spec);
+        $("solverGraph").hidden = false;
+      }
+
+      /* ---------- find a solution: book / exercise / question finder ----------
+         SOLUTION_INDEX is the data-driven index of the solutions that
+         ALREADY exist on this page. Each entry points at a lesson article
+         (its id) and, for one question, at the .qa block whose heading
+         starts with qlabel. To index a new lesson later, add an entry
+         here — nothing else needs to change. */
+      var SOLUTION_INDEX = [
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "", qnum: "", part: "", qlabel: "",
+          title: "Exercise 11.1 — Vector-Valued Functions (all solutions, Q1–Q7)",
+          keywords: "exercise 11.1 vector valued functions chapter 11" },
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "Q1", qnum: "1", part: "", qlabel: "Q1.",
+          title: "Exercise 11.1 Q1 — Two real-life examples of vector-valued functions",
+          keywords: "two real life examples vector valued functions necessary satellite orbit thrown ball projectile" },
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "Q2", qnum: "2", part: "", qlabel: "Q2.",
+          title: "Exercise 11.1 Q2 — Vector function for a particle moving in a circle",
+          keywords: "particle moving circle circular motion position vector" },
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "Q3", qnum: "3", part: "", qlabel: "Q3.",
+          title: "Exercise 11.1 Q3 — Vector function for a car on a parabolic path",
+          keywords: "car moving parabolic path parabola" },
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "Q4", qnum: "4", part: "", qlabel: "Q4.",
+          title: "Exercise 11.1 Q4 — 3D vector function for a drone flying upward in a spiral",
+          keywords: "drone flying upward spiral 3d three dimensional helix" },
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "Q5", qnum: "5", part: "", qlabel: "Q5.",
+          title: "Exercise 11.1 Q5 — r(t) = (t² + 1) î + √t ĵ",
+          keywords: "construct r(t) given x(t) t^2 + 1 y(t) sqrt t components" },
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "Q6", qnum: "6", part: "", qlabel: "Q6.",
+          title: "Exercise 11.1 Q6 — r(t) with 1/(t + 4), ln √t and sec⁻¹(t)",
+          keywords: "construct r(t) given components 1/(t+4) ln sqrt sec inverse 3d" },
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "Q7(i)", qnum: "7", part: "i", qlabel: "Q7(i).",
+          title: "Exercise 11.1 Q7(i) — Domain (0, ∞) and range y = 2 ln x of r(t) = √t î + ln t ĵ",
+          keywords: "find domain range sqrt t ln t vector function" },
+        { lesson: "exercise-11-1", book: "2nd Year Maths (Class 12)", exercise: "11.1", question: "Q7(ii)", qnum: "7", part: "ii", qlabel: "Q7(ii).",
+          title: "Exercise 11.1 Q7(ii) — Domain R and range the unit circle of r(t) = cos t î + sin t ĵ",
+          keywords: "find domain range cos t sin t unit circle vector function" },
+        { lesson: "domain-of-ex", book: "FSc Maths — Functions", exercise: "", question: "", qnum: "", part: "", qlabel: "",
+          title: "Domain of e^x — explained with graph",
+          keywords: "domain of e^x exponential function domain range e^x" },
+        { lesson: "linear-algebra", book: "Linear Algebra (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "",
+          title: "Linear Algebra — Systems, Vector Spaces & Eigenvalues (lesson)",
+          keywords: "linear algebra lesson systems vector spaces eigenvalues" },
+        { lesson: "linear-algebra", book: "Linear Algebra (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "1 ·",
+          title: "Linear Algebra — Solving a system of linear equations (2x + y = 5, x − y = 1)",
+          keywords: "system of linear equations elimination simultaneous equations solving" },
+        { lesson: "linear-algebra", book: "Linear Algebra (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "2 ·",
+          title: "Linear Algebra — Determinant and inverse of a 2×2 matrix",
+          keywords: "determinant inverse 2x2 matrix det" },
+        { lesson: "linear-algebra", book: "Linear Algebra (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "3 ·",
+          title: "Linear Algebra — Vector spaces and linear independence",
+          keywords: "vector spaces linear independence dependent basis span" },
+        { lesson: "linear-algebra", book: "Linear Algebra (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "4 ·",
+          title: "Linear Algebra — Eigenvalues and eigenvectors (fully worked)",
+          keywords: "eigenvalues eigenvectors eigenvalue eigenvector characteristic" },
+        { lesson: "calculus", book: "Calculus (FSc · A-Level · BS)", exercise: "", question: "", qnum: "", part: "", qlabel: "",
+          title: "Calculus — Limits, Derivatives & Integrals (lesson)",
+          keywords: "calculus lesson limits derivatives integrals" },
+        { lesson: "calculus", book: "Calculus (FSc · A-Level · BS)", exercise: "", question: "", qnum: "", part: "", qlabel: "1 ·",
+          title: "Calculus — Limits (lim (x² − 4)/(x − 2) = 4)",
+          keywords: "limits limit approaching factorise cancel standard" },
+        { lesson: "calculus", book: "Calculus (FSc · A-Level · BS)", exercise: "", question: "", qnum: "", part: "", qlabel: "2 ·",
+          title: "Calculus — Derivative rules: power, product and chain rule",
+          keywords: "derivative rules power rule product rule chain rule differentiation" },
+        { lesson: "calculus", book: "Calculus (FSc · A-Level · BS)", exercise: "", question: "", qnum: "", part: "", qlabel: "3 ·",
+          title: "Calculus — Maximum and minimum of f(x) = x³ − 3x (fully worked)",
+          keywords: "maximum minimum stationary points second derivative turning points optimisation" },
+        { lesson: "calculus", book: "Calculus (FSc · A-Level · BS)", exercise: "", question: "", qnum: "", part: "", qlabel: "4 ·",
+          title: "Calculus — Integrals: rules, by parts and definite integrals",
+          keywords: "integrals integration by parts definite integral area under curve" },
+        { lesson: "group-theory", book: "Group Theory (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "",
+          title: "Group Theory — Groups, Subgroups & Lagrange's Theorem (lesson)",
+          keywords: "group theory lesson groups subgroups lagrange" },
+        { lesson: "group-theory", book: "Group Theory (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "1 ·",
+          title: "Group Theory — The four group axioms",
+          keywords: "group axioms closure associativity identity inverses abelian examples" },
+        { lesson: "group-theory", book: "Group Theory (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "2 ·",
+          title: "Group Theory — Z₄ under addition mod 4: order of elements, cyclic groups",
+          keywords: "z4 finite group addition mod 4 order of an element cyclic group generator" },
+        { lesson: "group-theory", book: "Group Theory (BS / University)", exercise: "", question: "", qnum: "", part: "", qlabel: "3 ·",
+          title: "Group Theory — Subgroups and Lagrange's theorem",
+          keywords: "subgroups lagrange theorem order divides subgroup cosets" }
+      ];
+      function finderNorm(s) {
+        return String(s || "").toLowerCase().replace(/−/g, "-").replace(/\s+/g, " ").trim();
+      }
+      /* Pure lookup: returns the best-matching index entry, or null when
+         nothing on the site matches. Never invents a solution. */
+      function findSolution(query, bookLesson) {
+        var q = finderNorm(query);
+        if (!q && !bookLesson) return null;
+        var exM = q.match(/(\d+)\s*\.\s*(\d+)/);
+        var exNum = exM ? exM[1] + "." + exM[2] : null;
+        var qM = q.match(/\bq\s*(\d+)\s*(?:\(\s*(i{1,3}|iv)\s*\)|\b(i{1,3}|iv)\b)?/) || q.match(/question\s*(\d+)/);
+        var qNum = null, qPart = "";
+        if (qM) { qNum = qM[1]; qPart = qM[2] || qM[3] || ""; }
+        var best = null, bestScore = 0;
+        SOLUTION_INDEX.forEach(function (e) {
+          if (bookLesson && e.lesson !== bookLesson) return;
+          if (exNum && e.exercise !== exNum) return;
+          if (qNum && exNum && e.exercise === exNum && !e.qnum) return; /* asked for a specific question: the whole-exercise entry is not an answer */
+          var score = 0;
+          if (exNum && e.exercise === exNum) score += 40;
+          if (qNum) {
+            if (e.qnum === qNum && (e.part || "") === qPart) score += 60;
+            else if (e.qnum === qNum && qPart === "") score += 45;
+            else if (e.qnum) return; /* a different specific question */
+          } else if (e.qnum) score -= 5;
+          var hits = 0;
+          e.keywords.split(" ").forEach(function (w) { if (w.length > 2 && q.indexOf(w) >= 0) hits++; });
+          score += hits * 10;
+          if (e.qlabel) score += 2; /* a specific worked example beats the whole-lesson entry on a tie */
+          if (score > bestScore) { bestScore = score; best = e; }
+        });
+        return bestScore >= 10 ? best : null;
+      }
+      function escText(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+      var foundTimer = null;
+      function jumpToSolution(entry) {
+        var lesson = document.getElementById(entry.lesson);
+        if (!lesson) return;
+        var target = lesson;
+        if (entry.qlabel) {
+          var qas = lesson.querySelectorAll(".qa");
+          for (var i = 0; i < qas.length; i++) {
+            var h = qas[i].querySelector("h4");
+            if (h && h.textContent.replace(/\s+/g, " ").trim().indexOf(entry.qlabel) === 0) { target = qas[i]; break; }
+          }
+        }
+        if (foundTimer) { clearTimeout(foundTimer); foundTimer = null; }
+        Array.prototype.forEach.call(document.querySelectorAll(".qa-found"), function (el) { el.classList.remove("qa-found"); });
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (target !== lesson) {
+          target.classList.add("qa-found");
+          foundTimer = setTimeout(function () { target.classList.remove("qa-found"); }, 3200);
+        }
+      }
+      function runFinder() {
+        var out = $("finderOut");
+        var text = $("finderText").value.trim();
+        var bookSel = $("finderBook");
+        var bookLesson = bookSel.value;
+        var query, searched;
+        if (text) {
+          query = text; searched = text;
+        } else {
+          var bookText = bookSel.options[bookSel.selectedIndex].text;
+          var ex = $("finderExercise").value.trim();
+          var qu = $("finderQuestion").value.trim();
+          if (/^\d+$/.test(qu)) qu = "Q" + qu;
+          if (!bookLesson && !ex && !qu) {
+            out.innerHTML = '<div class="finder-miss"><b>Nothing to search yet</b>Choose a book, type an exercise and question above — for example Exercise 11.1, Q5 — or type a search like “domain of e^x”.</div>';
+            return;
+          }
+          query = [bookLesson ? bookText : "", ex, qu].join(" ");
+          searched = [bookLesson ? bookText : "", ex, qu].filter(function (p) { return !!p; }).join(" · ");
+        }
+        var entry = findSolution(query, text ? "" : bookLesson);
+        if (!entry) {
+          out.innerHTML = '<div class="finder-miss"><b>Not added yet</b>No solution for “' + escText(searched) + '” is on MathsGuru yet — the finder only searches solutions already on this page, so nothing has been made up for it. Solutions that are here: Exercise 11.1 Q1–Q7 (2nd Year Maths, Chapter 11), the domain of e^x lesson, and the worked examples in the Linear Algebra, Calculus and Group Theory lessons.</div>';
+          return;
+        }
+        out.innerHTML = '<div class="finder-hit"><b>Found: ' + escText(entry.title) + '</b><p>' + escText(entry.book) + (entry.exercise ? " · Exercise " + entry.exercise : "") + ' — the solution is highlighted in the lessons below.</p><button class="btn" type="button" id="finderJump">Go to the solution ↓</button></div>';
+        jumpToSolution(entry);
+        $("finderJump").addEventListener("click", function () { jumpToSolution(entry); });
+      }
+      $("finderForm").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        runFinder();
+      });
+
+      /* Test hooks (used by the offline verification harness; harmless in
+         the browser and inside the app WebView). */
+      if (typeof window !== "undefined") {
+        window.MathsGuruTest = {
+          solveQuestion: solveQuestion,
+          extractPlot: extractPlot,
+          buildGraphSVG: buildGraphSVG,
+          computeMarks: computeMarks,
+          findSolution: findSolution,
+          SOLUTION_INDEX: SOLUTION_INDEX
+        };
       }
       $("solverForm").addEventListener("submit", function (ev) {
         ev.preventDefault();
