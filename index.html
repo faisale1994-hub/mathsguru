@@ -353,10 +353,22 @@
          Signed out: only the cover, then the Sign In / Sign Up screens.
          Signed in: cover and auth screens hidden, full site visible. */
       #coverPage { display: none; }
+      #verifyPage { display: none; }
       body.gate-locked footer.site { display: none; }
       body.gate-locked nav.main { display: none; }
       body.gate-cover main { display: none; }
       body.gate-cover #coverPage { display: flex; }
+      body.gate-verify main { display: none; }
+      body.gate-verify #verifyPage { display: flex; }
+      .verify-card { width: 100%; text-align: left; }
+      .verify-card p { color: var(--ink-soft); margin: 10px 0 0; }
+      .verify-email { font-weight: 700; color: var(--accent-dark); word-break: break-all; }
+      .verify-actions { display: grid; gap: 10px; margin-top: 18px; }
+      .verify-actions .btn { width: 100%; padding: 13px 20px; font-size: 1.02rem; }
+      .verify-actions .btn[disabled] { opacity: .55; cursor: default; }
+      .verify-signout { text-align: center; margin: 16px 0 0; }
+      .verify-signout a { color: var(--accent); font-weight: 700; text-decoration: none; }
+      .verify-signout a:hover { text-decoration: underline; }
       body.gate-locked.gate-auth main .wrap > *:not(#account) { display: none; }
       body:not(.gate-locked) #account { display: none; }
       .cover { flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: calc(100vh - 61px); min-height: calc(100svh - 61px); padding: 56px 20px 150px; background: linear-gradient(to top, #1b7ec2 0%, #57a8dc 20%, rgba(87, 168, 220, 0) 52%), #ffffff; }
@@ -586,6 +598,21 @@
       <div class="cover-btns">
         <button type="button" class="btn primary" id="coverLoginBtn">Sign In</button>
         <button type="button" class="btn" id="coverSignupBtn">Create Account</button>
+      </div>
+    </section>
+
+    <section id="verifyPage" class="cover" aria-label="Verify your email">
+      <div class="cover-logo" aria-hidden="true"><span class="auth-logo-mark">∑</span><span class="auth-logo-text">MathsGuru</span></div>
+      <div class="auth-card verify-card">
+        <h2 class="auth-screen-title">VERIFY YOUR EMAIL</h2>
+        <p>A verification link has been sent to <span class="verify-email" id="verifyEmail"></span>.</p>
+        <p>Open Gmail, click the link in the email, then come back here and press the button below. Your courses open as soon as your email is verified.</p>
+        <div class="auth-msg" id="verifyMsg" aria-live="polite"></div>
+        <div class="verify-actions">
+          <button type="button" class="btn primary" id="verifyContinueBtn">I have verified — Continue</button>
+          <button type="button" class="btn" id="verifyResendBtn">Resend verification email</button>
+        </div>
+        <p class="verify-signout"><a href="#top" id="verifySignOutLink">Sign out</a></p>
       </div>
     </section>
 
@@ -3786,16 +3813,29 @@
         document.body.classList.add("gate-locked");
         document.body.classList.add("gate-cover");
         document.body.classList.remove("gate-auth");
+        document.body.classList.remove("gate-verify");
       }
       function showAuth() {
         document.body.classList.add("gate-locked");
         document.body.classList.remove("gate-cover");
         document.body.classList.add("gate-auth");
+        document.body.classList.remove("gate-verify");
       }
       function showApp() {
         document.body.classList.remove("gate-locked");
         document.body.classList.remove("gate-cover");
         document.body.classList.remove("gate-auth");
+        document.body.classList.remove("gate-verify");
+      }
+      /* Verify-your-email screen: shown while a signed-in account has not
+         yet clicked the verification link in its email. The site stays
+         locked (gate-locked) until the email is verified. */
+      function showVerify(email) {
+        document.body.classList.add("gate-locked");
+        document.body.classList.add("gate-verify");
+        document.body.classList.remove("gate-cover");
+        document.body.classList.remove("gate-auth");
+        if (email) $("verifyEmail").textContent = email;
       }
       $("tabSignup").addEventListener("click", function () { setTab("signup"); });
       $("tabLogin").addEventListener("click", function () { setTab("login"); });
@@ -3874,9 +3914,18 @@
           db.collection("users").doc(user.uid).set({
             name: name || user.displayName || "",
             email: user.email || "",
+            emailVerified: (user.emailVerified === true),
             courses: DEFAULT_COURSES.slice(),
             createdAt: new Date().toISOString()
           }).then(function () {}, function () {});
+        } catch (e) {}
+      }
+      /* Once an account's email is confirmed verified, record that on its
+         Firestore doc too (fire-and-forget, like the other Firestore calls). */
+      function markUserVerified(user) {
+        if (!db || !user) return;
+        try {
+          db.collection("users").doc(user.uid).set({ emailVerified: true }, { merge: true }).then(function () {}, function () {});
         } catch (e) {}
       }
       function loadUserCourses(user) {
@@ -3898,8 +3947,15 @@
         auth.onAuthStateChanged(function (user) {
           if (user) {
             setLoggedIn(user.displayName || user.email, user.email);
-            showApp();
-            loadUserCourses(user);
+            if (user.emailVerified) {
+              showApp();
+              markUserVerified(user);
+              loadUserCourses(user);
+            } else {
+              /* Signed in but the email is not verified yet: the site
+                 stays locked on the verify screen. */
+              showVerify(user.email);
+            }
           } else {
             setLoggedOut();
             applyMyCourses(null);
@@ -3926,11 +3982,18 @@
         auth.createUserWithEmailAndPassword(email, pw).then(function (cred) {
           return cred.user.updateProfile({ displayName: name }).then(function () {
             setLoggedIn(name, email);
-            showApp();
             createUserDoc(cred.user, name);
             applyMyCourses(DEFAULT_COURSES);
-            showMsg("signupMsg", "Account created — welcome to MathsGuru, " + name + "! You are now logged in.", true);
             $("suPassword").value = "";
+            /* Real email verification: Firebase emails a verification link
+               to the student's address; the site opens only after they
+               click it. If sending itself fails, still show the verify
+               screen so the student can use Resend. */
+            var sendErr = null;
+            return cred.user.sendEmailVerification().then(function () {}, function (err) { sendErr = err; }).then(function () {
+              showVerify(email);
+              if (sendErr) showMsg("verifyMsg", authError(sendErr, false), false);
+            });
           });
         }).catch(function (err) { showMsg("signupMsg", authError(err, false), false); });
       });
@@ -3947,13 +4010,65 @@
         }).then(function (cred) {
           var nm = cred.user.displayName || cred.user.email;
           setLoggedIn(nm, cred.user.email);
+          $("liPassword").value = "";
+          if (!cred.user.emailVerified) {
+            /* Account exists but its email was never verified: back to
+               the verify screen, the site does not open. */
+            showVerify(cred.user.email);
+            return;
+          }
           showApp();
           loadUserCourses(cred.user);
           showMsg("loginMsg", "Welcome back, " + nm + "! You are logged in.", true);
-          $("liPassword").value = "";
         }).catch(function (err) { showMsg("loginMsg", authError(err, true), false); });
       });
       $("logoutBtn").addEventListener("click", function () {
+        if (auth) auth.signOut();
+        setLoggedOut();
+        applyMyCourses(null);
+        showCover();
+      });
+      /* Verify-your-email screen actions. */
+      $("verifyContinueBtn").addEventListener("click", function () {
+        if (!auth || !auth.currentUser) return;
+        auth.currentUser.reload().then(function () {
+          var u = auth.currentUser;
+          if (u && u.emailVerified) {
+            markUserVerified(u);
+            setLoggedIn(u.displayName || u.email, u.email);
+            showApp();
+            loadUserCourses(u);
+          } else {
+            showMsg("verifyMsg", "Not verified yet — check your inbox and spam folder, click the link in the email, then press Continue again.", false);
+          }
+        }).catch(function (err) { showMsg("verifyMsg", authError(err, true), false); });
+      });
+      var verifyResendTimer = null;
+      $("verifyResendBtn").addEventListener("click", function () {
+        if (!auth || !auth.currentUser) return;
+        var btn = $("verifyResendBtn");
+        var user = auth.currentUser;
+        user.sendEmailVerification().then(function () {
+          showMsg("verifyMsg", "Verification email sent again to " + (user.email || "") + ".", true);
+          btn.disabled = true;
+          var left = 60;
+          btn.textContent = "Resend verification email (" + left + "s)";
+          if (verifyResendTimer) clearInterval(verifyResendTimer);
+          verifyResendTimer = setInterval(function () {
+            left--;
+            if (left <= 0) {
+              clearInterval(verifyResendTimer);
+              verifyResendTimer = null;
+              btn.disabled = false;
+              btn.textContent = "Resend verification email";
+            } else {
+              btn.textContent = "Resend verification email (" + left + "s)";
+            }
+          }, 1000);
+        }).catch(function (err) { showMsg("verifyMsg", authError(err, false), false); });
+      });
+      $("verifySignOutLink").addEventListener("click", function (ev) {
+        ev.preventDefault();
         if (auth) auth.signOut();
         setLoggedOut();
         applyMyCourses(null);
