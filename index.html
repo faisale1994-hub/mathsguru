@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tessdata.projectnaptha.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="icon" href="data:," />
     <title>MathsGuru — All FSc Maths: Class 11 &amp; 12 Complete Notes, Formulas &amp; Solved Questions</title>
     <meta name="description" content="MathsGuru has ALL FSc maths in one place — complete Class 11 and Class 12 notes with formulas and worked examples: number systems, complex numbers, sets & functions, matrices & determinants, quadratic equations, partial fractions, sequences & series, permutations, combinations & probability, binomial theorem, trigonometry, limits, differentiation, integration, analytic geometry, linear programming, conic sections, vectors and statistics. Plus a step-by-step question solver, Exercise 11.1 solutions, domain of e^x, MDCAT logical reasoning, qualitative reasoning notes, UGC NET Paper-I solved papers and quizzes." />
@@ -3821,11 +3823,42 @@
 
       /* ---------- Files: Maths books — chapter & exercise PDFs ----------
          Data taken exactly from the chapter/exercise file lists for the
-         Math 11 (14 chapters, 52 exercises) and Math 12 (11 chapters, 43
-         exercises) PECTAA books. Every chapter PDF and every exercise PDF
-         opens in a NEW tab (target="_blank"). There are no Answers files,
-         so no Answers entry is listed or linked. */
+         Math 9 (13 units), Math 11 (14 chapters, 52 exercises) and
+         Math 12 (11 chapters, 43 exercises) PECTAA books. Every chapter
+         PDF and every exercise PDF opens in a NEW tab (target="_blank").
+         There are no Answers files, so no Answers entry is listed or
+         linked. Math 10 (12 chapters) has no chapter or exercise PDFs,
+         so its chapters list solution PDFs only (see FILE_SOLUTIONS). */
       var FILE_BOOKS = [
+        { title: "Math 9 — FSc Class 9 Maths (PECTAA): 13 units", chapters: [
+          { n: 1, title: "Real Numbers", pdf: "9th-ch01-real-numbers.pdf", exercises: [["Exercise 1.1", "9th-ch01-ex1-1-real-numbers.pdf"], ["Exercise 1.2", "9th-ch01-ex1-2-real-numbers.pdf"], ["Exercise 1.3", "9th-ch01-ex1-3-real-numbers.pdf"], ["Review", "9th-ch01-review-real-numbers.pdf"]] },
+          { n: 2, title: "Logarithms", pdf: "9th-ch02-logarithms.pdf", exercises: [["Exercise 2.1", "9th-ch02-ex2-1-logarithms.pdf"], ["Exercise 2.2", "9th-ch02-ex2-2-logarithms.pdf"], ["Exercise 2.3", "9th-ch02-ex2-3-logarithms.pdf"], ["Exercise 2.4", "9th-ch02-ex2-4-logarithms.pdf"], ["Review", "9th-ch02-review-logarithms.pdf"]] },
+          { n: 3, title: "Set and Functions", pdf: "9th-ch03-set-and-functions.pdf", exercises: [["Exercise 3.1", "9th-ch03-ex3-1-set-and-functions.pdf"], ["Exercise 3.2", "9th-ch03-ex3-2-set-and-functions.pdf"], ["Exercise 3.3", "9th-ch03-ex3-3-set-and-functions.pdf"], ["Review", "9th-ch03-review-set-and-functions.pdf"]] },
+          { n: 4, title: "Factorization and Algebraic Manipulation", pdf: "9th-ch04-factorization-and-algebraic-manipulation.pdf", exercises: [["Exercise 4.1", "9th-ch04-ex4-1-factorization-and-algebraic-manipulation.pdf"], ["Exercise 4.2", "9th-ch04-ex4-2-factorization-and-algebraic-manipulation.pdf"], ["Exercise 4.3", "9th-ch04-ex4-3-factorization-and-algebraic-manipulation.pdf"], ["Exercise 4.4", "9th-ch04-ex4-4-factorization-and-algebraic-manipulation.pdf"], ["Review", "9th-ch04-review-factorization-and-algebraic-manipulation.pdf"]] },
+          { n: 5, title: "Linear Equations and Inequalities", pdf: "9th-ch05-linear-equations-and-inequalities.pdf", exercises: [["Exercise 5.1", "9th-ch05-ex5-1-linear-equations-and-inequalities.pdf"], ["Exercise 5.2", "9th-ch05-ex5-2-linear-equations-and-inequalities.pdf"], ["Review", "9th-ch05-review-linear-equations-and-inequalities.pdf"]] },
+          { n: 6, title: "Trigonometry", pdf: "9th-ch06-trigonometry.pdf", exercises: [["Exercise 6.1", "9th-ch06-ex6-1-trigonometry.pdf"], ["Exercise 6.2", "9th-ch06-ex6-2-trigonometry.pdf"], ["Exercise 6.3", "9th-ch06-ex6-3-trigonometry.pdf"], ["Exercise 6.4", "9th-ch06-ex6-4-trigonometry.pdf"], ["Exercise 6.5", "9th-ch06-ex6-5-trigonometry.pdf"], ["Exercise 6.6", "9th-ch06-ex6-6-trigonometry.pdf"], ["Review", "9th-ch06-review-trigonometry.pdf"]] },
+          { n: 7, title: "Coordinate Geometry", pdf: "9th-ch07-coordinate-geometry.pdf", exercises: [["Exercise 7.1", "9th-ch07-ex7-1-coordinate-geometry.pdf"], ["Exercise 7.2", "9th-ch07-ex7-2-coordinate-geometry.pdf"], ["Exercise 7.3", "9th-ch07-ex7-3-coordinate-geometry.pdf"], ["Review", "9th-ch07-review-coordinate-geometry.pdf"]] },
+          { n: 8, title: "Logic", pdf: "9th-ch08-logic.pdf", exercises: [["Exercise 8", "9th-ch08-ex8-logic.pdf"]] },
+          { n: 9, title: "Similar Figures", pdf: "9th-ch09-similar-figures.pdf", exercises: [["Exercise 9.1", "9th-ch09-ex9-1-similar-figures.pdf"], ["Exercise 9.2", "9th-ch09-ex9-2-similar-figures.pdf"], ["Exercise 9.3", "9th-ch09-ex9-3-similar-figures.pdf"], ["Exercise 9.4", "9th-ch09-ex9-4-similar-figures.pdf"], ["Review", "9th-ch09-review-similar-figures.pdf"]] },
+          { n: 10, title: "Graphs of Functions", pdf: "9th-ch10-graphs-of-functions.pdf", exercises: [["Exercise 10.1", "9th-ch10-ex10-1-graphs-of-functions.pdf"], ["Exercise 10.2", "9th-ch10-ex10-2-graphs-of-functions.pdf"], ["Review", "9th-ch10-review-graphs-of-functions.pdf"]] },
+          { n: 11, title: "Loci and Construction", pdf: "9th-ch11-loci-and-construction.pdf", exercises: [["Exercise 11.1", "9th-ch11-ex11-1-loci-and-construction.pdf"], ["Exercise 11.2", "9th-ch11-ex11-2-loci-and-construction.pdf"], ["Review", "9th-ch11-review-loci-and-construction.pdf"]] },
+          { n: 12, title: "Information Handling", pdf: "9th-ch12-information-handling.pdf", exercises: [["Exercise 12.1", "9th-ch12-ex12-1-information-handling.pdf"], ["Exercise 12.2", "9th-ch12-ex12-2-information-handling.pdf"], ["Review", "9th-ch12-review-information-handling.pdf"]] },
+          { n: 13, title: "Probability", pdf: "9th-ch13-probability.pdf", exercises: [["Exercise 13.1", "9th-ch13-ex13-1-probability.pdf"], ["Exercise 13.2", "9th-ch13-ex13-2-probability.pdf"], ["Review", "9th-ch13-review-probability.pdf"]] }
+        ] },
+        { title: "Math 10 — Class 10 Maths (PECTAA): 12 chapters", chapters: [
+          { n: 1, title: "Complex Numbers", pdf: null, solKey: "10th-ch01-complex-numbers", exercises: [] },
+          { n: 2, title: "Quadratic Equations and Inequalities", pdf: null, solKey: "10th-ch02-quadratic-equations-and-inequalities", exercises: [] },
+          { n: 3, title: "Matrices and Determinants", pdf: null, solKey: "10th-ch03-matrices-and-determinants", exercises: [] },
+          { n: 4, title: "Functions and Graphs", pdf: null, solKey: "10th-ch04-functions-and-graphs", exercises: [] },
+          { n: 5, title: "Algebraic Fractions", pdf: null, solKey: "10th-ch05-algebraic-fractions", exercises: [] },
+          { n: 6, title: "Vectors in Plane", pdf: null, solKey: "10th-ch06-vectors-in-plane", exercises: [] },
+          { n: 7, title: "Trigonometry", pdf: null, solKey: "10th-ch07-trigonometry", exercises: [] },
+          { n: 8, title: "Chords and Arcs of a Circle", pdf: null, solKey: "10th-ch08-chords-and-arcs-of-a-circle", exercises: [] },
+          { n: 9, title: "Tangent and Angles of a Circle", pdf: null, solKey: "10th-ch09-tangent-and-angles-of-a-circle", exercises: [] },
+          { n: 10, title: "Practical Geometry of Circles", pdf: null, solKey: "10th-ch10-practical-geometry-of-circles", exercises: [] },
+          { n: 11, title: "Information Handling", pdf: null, solKey: "10th-ch11-information-handling", exercises: [] },
+          { n: 12, title: "Probability", pdf: null, solKey: "10th-ch12-probability", exercises: [] }
+        ] },
         { title: "Math 11 — FSc Class 11 Maths (PECTAA)", chapters: [
           { n: 1, title: "Complex Numbers", pdf: "11th-ch01-complex-numbers.pdf", exercises: [["Exercise 1.1", "11th-ch01-ex1-1-complex-numbers.pdf"], ["Exercise 1.2", "11th-ch01-ex1-2-complex-numbers.pdf"], ["Exercise 1.3", "11th-ch01-ex1-3-complex-numbers.pdf"], ["Exercise 1.4", "11th-ch01-ex1-4-complex-numbers.pdf"], ["Exercise 1.5", "11th-ch01-ex1-5-complex-numbers.pdf"]] },
           { n: 2, title: "Functions and Graphs", pdf: "11th-ch02-functions-and-graphs.pdf", exercises: [["Exercise 2.1", "11th-ch02-ex2-1-functions-and-graphs.pdf"], ["Exercise 2.2", "11th-ch02-ex2-2-functions-and-graphs.pdf"]] },
@@ -3858,10 +3891,15 @@
       ];
       /* ---------- Files: Maths books — solution PDFs ----------
          Solution links for the same chapters, keyed by the chapter PDF
-         filename. Filenames taken exactly from the solutions mapping:
-         one solution PDF per exercise plus one worked-examples solution
-         PDF per chapter (120 files), served from assets/solutions/ and
-         opened in a new tab like the exercise links. */
+         filename (the Math 10 chapters have no chapter PDF, so theirs
+         are keyed by a chapter key instead). Filenames taken exactly
+         from the solutions mappings: one solution PDF per exercise plus
+         one worked-examples solution PDF per chapter (120 files for
+         Math 11/12; 63 for Math 9, which also has a review solution for
+         every chapter except Logic; 79 for Math 10, including review,
+         worked-examples, skilled-practice/challenge and activity
+         solutions), served from assets/solutions/ and opened in a new
+         tab like the exercise links. */
       var FILE_SOLUTIONS = {
         "11th-ch01-complex-numbers.pdf": { exercises: [["Exercise 1.1", "11th-ch01-ex1-1-solution-complex-numbers.pdf"], ["Exercise 1.2", "11th-ch01-ex1-2-solution-complex-numbers.pdf"], ["Exercise 1.3", "11th-ch01-ex1-3-solution-complex-numbers.pdf"], ["Exercise 1.4", "11th-ch01-ex1-4-solution-complex-numbers.pdf"], ["Exercise 1.5", "11th-ch01-ex1-5-solution-complex-numbers.pdf"]], examples: "11th-ch01-examples-solutions-complex-numbers.pdf" },
         "11th-ch02-functions-and-graphs.pdf": { exercises: [["Exercise 2.1", "11th-ch02-ex2-1-solution-functions-and-graphs.pdf"], ["Exercise 2.2", "11th-ch02-ex2-2-solution-functions-and-graphs.pdf"]], examples: "11th-ch02-examples-solutions-functions-and-graphs.pdf" },
@@ -3887,7 +3925,32 @@
         "12th-ch08-numerical-method.pdf": { exercises: [["Exercise 8.1", "12th-ch08-ex8-1-solution-numerical-method.pdf"], ["Exercise 8.2", "12th-ch08-ex8-2-solution-numerical-method.pdf"], ["Exercise 8.3", "12th-ch08-ex8-3-solution-numerical-method.pdf"], ["Exercise 8.4", "12th-ch08-ex8-4-solution-numerical-method.pdf"]], examples: "12th-ch08-examples-solutions-numerical-method.pdf" },
         "12th-ch09-inverse-trigonometric-functions.pdf": { exercises: [["Exercise 9.1", "12th-ch09-ex9-1-solution-inverse-trigonometric-functions.pdf"], ["Exercise 9.2", "12th-ch09-ex9-2-solution-inverse-trigonometric-functions.pdf"]], examples: "12th-ch09-examples-solutions-inverse-trigonometric-functions.pdf" },
         "12th-ch10-solution-of-trigonometric-equations.pdf": { exercises: [["Exercise 10.1", "12th-ch10-ex10-1-solution-solution-of-trigonometric-equations.pdf"], ["Exercise 10.2", "12th-ch10-ex10-2-solution-solution-of-trigonometric-equations.pdf"]], examples: "12th-ch10-examples-solutions-solution-of-trigonometric-equations.pdf" },
-        "12th-ch11-vector-valued-functions.pdf": { exercises: [["Exercise 11.1", "12th-ch11-ex11-1-solution-vector-valued-functions.pdf"], ["Exercise 11.2", "12th-ch11-ex11-2-solution-vector-valued-functions.pdf"], ["Exercise 11.3", "12th-ch11-ex11-3-solution-vector-valued-functions.pdf"]], examples: "12th-ch11-examples-solutions-vector-valued-functions.pdf" }
+        "12th-ch11-vector-valued-functions.pdf": { exercises: [["Exercise 11.1", "12th-ch11-ex11-1-solution-vector-valued-functions.pdf"], ["Exercise 11.2", "12th-ch11-ex11-2-solution-vector-valued-functions.pdf"], ["Exercise 11.3", "12th-ch11-ex11-3-solution-vector-valued-functions.pdf"]], examples: "12th-ch11-examples-solutions-vector-valued-functions.pdf" },
+        "9th-ch01-real-numbers.pdf": { exercises: [["Exercise 1.1", "9th-ch01-ex1-1-solution-real-numbers.pdf"], ["Exercise 1.2", "9th-ch01-ex1-2-solution-real-numbers.pdf"], ["Exercise 1.3", "9th-ch01-ex1-3-solution-real-numbers.pdf"]], review: "9th-ch01-review-solution-real-numbers.pdf", examples: "9th-ch01-examples-solutions-real-numbers.pdf" },
+        "9th-ch02-logarithms.pdf": { exercises: [["Exercise 2.1", "9th-ch02-ex2-1-solution-logarithms.pdf"], ["Exercise 2.2", "9th-ch02-ex2-2-solution-logarithms.pdf"], ["Exercise 2.3", "9th-ch02-ex2-3-solution-logarithms.pdf"], ["Exercise 2.4", "9th-ch02-ex2-4-solution-logarithms.pdf"]], review: "9th-ch02-review-solution-logarithms.pdf", examples: "9th-ch02-examples-solutions-logarithms.pdf" },
+        "9th-ch03-set-and-functions.pdf": { exercises: [["Exercise 3.1", "9th-ch03-ex3-1-solution-set-and-functions.pdf"], ["Exercise 3.2", "9th-ch03-ex3-2-solution-set-and-functions.pdf"], ["Exercise 3.3", "9th-ch03-ex3-3-solution-set-and-functions.pdf"]], review: "9th-ch03-review-solution-set-and-functions.pdf", examples: "9th-ch03-examples-solutions-set-and-functions.pdf" },
+        "9th-ch04-factorization-and-algebraic-manipulation.pdf": { exercises: [["Exercise 4.1", "9th-ch04-ex4-1-solution-factorization-and-algebraic-manipulation.pdf"], ["Exercise 4.2", "9th-ch04-ex4-2-solution-factorization-and-algebraic-manipulation.pdf"], ["Exercise 4.3", "9th-ch04-ex4-3-solution-factorization-and-algebraic-manipulation.pdf"], ["Exercise 4.4", "9th-ch04-ex4-4-solution-factorization-and-algebraic-manipulation.pdf"]], review: "9th-ch04-review-solution-factorization-and-algebraic-manipulation.pdf", examples: "9th-ch04-examples-solutions-factorization-and-algebraic-manipulation.pdf" },
+        "9th-ch05-linear-equations-and-inequalities.pdf": { exercises: [["Exercise 5.1", "9th-ch05-ex5-1-solution-linear-equations-and-inequalities.pdf"], ["Exercise 5.2", "9th-ch05-ex5-2-solution-linear-equations-and-inequalities.pdf"]], review: "9th-ch05-review-solution-linear-equations-and-inequalities.pdf", examples: "9th-ch05-examples-solutions-linear-equations-and-inequalities.pdf" },
+        "9th-ch06-trigonometry.pdf": { exercises: [["Exercise 6.1", "9th-ch06-ex6-1-solution-trigonometry.pdf"], ["Exercise 6.2", "9th-ch06-ex6-2-solution-trigonometry.pdf"], ["Exercise 6.3", "9th-ch06-ex6-3-solution-trigonometry.pdf"], ["Exercise 6.4", "9th-ch06-ex6-4-solution-trigonometry.pdf"], ["Exercise 6.5", "9th-ch06-ex6-5-solution-trigonometry.pdf"], ["Exercise 6.6", "9th-ch06-ex6-6-solution-trigonometry.pdf"]], review: "9th-ch06-review-solution-trigonometry.pdf", examples: "9th-ch06-examples-solutions-trigonometry.pdf" },
+        "9th-ch07-coordinate-geometry.pdf": { exercises: [["Exercise 7.1", "9th-ch07-ex7-1-solution-coordinate-geometry.pdf"], ["Exercise 7.2", "9th-ch07-ex7-2-solution-coordinate-geometry.pdf"], ["Exercise 7.3", "9th-ch07-ex7-3-solution-coordinate-geometry.pdf"]], review: "9th-ch07-review-solution-coordinate-geometry.pdf", examples: "9th-ch07-examples-solutions-coordinate-geometry.pdf" },
+        "9th-ch08-logic.pdf": { exercises: [["Exercise 8", "9th-ch08-ex8-solution-logic.pdf"]], examples: "9th-ch08-examples-solutions-logic.pdf" },
+        "9th-ch09-similar-figures.pdf": { exercises: [["Exercise 9.1", "9th-ch09-ex9-1-solution-similar-figures.pdf"], ["Exercise 9.2", "9th-ch09-ex9-2-solution-similar-figures.pdf"], ["Exercise 9.3", "9th-ch09-ex9-3-solution-similar-figures.pdf"], ["Exercise 9.4", "9th-ch09-ex9-4-solution-similar-figures.pdf"]], review: "9th-ch09-review-solution-similar-figures.pdf", examples: "9th-ch09-examples-solutions-similar-figures.pdf" },
+        "9th-ch10-graphs-of-functions.pdf": { exercises: [["Exercise 10.1", "9th-ch10-ex10-1-solution-graphs-of-functions.pdf"], ["Exercise 10.2", "9th-ch10-ex10-2-solution-graphs-of-functions.pdf"]], review: "9th-ch10-review-solution-graphs-of-functions.pdf", examples: "9th-ch10-examples-solutions-graphs-of-functions.pdf" },
+        "9th-ch11-loci-and-construction.pdf": { exercises: [["Exercise 11.1", "9th-ch11-ex11-1-solution-loci-and-construction.pdf"], ["Exercise 11.2", "9th-ch11-ex11-2-solution-loci-and-construction.pdf"]], review: "9th-ch11-review-solution-loci-and-construction.pdf", examples: "9th-ch11-examples-solutions-loci-and-construction.pdf" },
+        "9th-ch12-information-handling.pdf": { exercises: [["Exercise 12.1", "9th-ch12-ex12-1-solution-information-handling.pdf"], ["Exercise 12.2", "9th-ch12-ex12-2-solution-information-handling.pdf"]], review: "9th-ch12-review-solution-information-handling.pdf", examples: "9th-ch12-examples-solutions-information-handling.pdf" },
+        "9th-ch13-probability.pdf": { exercises: [["Exercise 13.1", "9th-ch13-ex13-1-solution-probability.pdf"], ["Exercise 13.2", "9th-ch13-ex13-2-solution-probability.pdf"]], review: "9th-ch13-review-solution-probability.pdf", examples: "9th-ch13-examples-solutions-probability.pdf" },
+        "10th-ch01-complex-numbers": { exercises: [["Exercise 1.1", "10th-ch01-ex1-1-solution-complex-numbers.pdf"], ["Exercise 1.2", "10th-ch01-ex1-2-solution-complex-numbers.pdf"], ["Exercise 1.3", "10th-ch01-ex1-3-solution-complex-numbers.pdf"], ["Exercise 1.4", "10th-ch01-ex1-4-solution-complex-numbers.pdf"]], review: "10th-ch01-review-solution-complex-numbers.pdf", examples: "10th-ch01-examples-solutions-complex-numbers.pdf", extras: [["Skilled Practice & Challenge", "10th-ch01-skilled-practice-challenge-solutions-complex-numbers.pdf"]] },
+        "10th-ch02-quadratic-equations-and-inequalities": { exercises: [["Exercise 2.1", "10th-ch02-ex2-1-solution-quadratic-equations-and-inequalities.pdf"], ["Exercise 2.2", "10th-ch02-ex2-2-solution-quadratic-equations-and-inequalities.pdf"], ["Exercise 2.3", "10th-ch02-ex2-3-solution-quadratic-equations-and-inequalities.pdf"], ["Exercise 2.4", "10th-ch02-ex2-4-solution-quadratic-equations-and-inequalities.pdf"], ["Exercise 2.5", "10th-ch02-ex2-5-solution-quadratic-equations-and-inequalities.pdf"], ["Exercise 2.6", "10th-ch02-ex2-6-solution-quadratic-equations-and-inequalities.pdf"], ["Exercise 2.7", "10th-ch02-ex2-7-solution-quadratic-equations-and-inequalities.pdf"]], review: "10th-ch02-review-solution-quadratic-equations-and-inequalities.pdf", examples: "10th-ch02-examples-solutions-quadratic-equations-and-inequalities.pdf", extras: [["Skilled Practice & Challenge", "10th-ch02-skilled-practice-challenge-solutions-quadratic-equations-and-inequalities.pdf"]] },
+        "10th-ch03-matrices-and-determinants": { exercises: [["Exercise 3.1", "10th-ch03-ex3-1-solution-matrices-and-determinants.pdf"], ["Exercise 3.2", "10th-ch03-ex3-2-solution-matrices-and-determinants.pdf"], ["Exercise 3.3", "10th-ch03-ex3-3-solution-matrices-and-determinants.pdf"], ["Exercise 3.4", "10th-ch03-ex3-4-solution-matrices-and-determinants.pdf"], ["Exercise 3.5", "10th-ch03-ex3-5-solution-matrices-and-determinants.pdf"], ["Exercise 3.6", "10th-ch03-ex3-6-solution-matrices-and-determinants.pdf"]], review: "10th-ch03-review-solution-matrices-and-determinants.pdf", examples: "10th-ch03-examples-solutions-matrices-and-determinants.pdf", extras: [["Skilled Practice & Challenge", "10th-ch03-skilled-practice-challenge-solutions-matrices-and-determinants.pdf"]] },
+        "10th-ch04-functions-and-graphs": { exercises: [["Exercise 4.1", "10th-ch04-ex4-1-solution-functions-and-graphs.pdf"], ["Exercise 4.2", "10th-ch04-ex4-2-solution-functions-and-graphs.pdf"], ["Exercise 4.3", "10th-ch04-ex4-3-solution-functions-and-graphs.pdf"]], review: "10th-ch04-review-solution-functions-and-graphs.pdf", examples: "10th-ch04-examples-solutions-functions-and-graphs.pdf", extras: [["Skilled Practice & Challenge", "10th-ch04-skilled-practice-challenge-solutions-functions-and-graphs.pdf"]] },
+        "10th-ch05-algebraic-fractions": { exercises: [["Exercise 5.1", "10th-ch05-ex5-1-solution-algebraic-fractions.pdf"], ["Exercise 5.2", "10th-ch05-ex5-2-solution-algebraic-fractions.pdf"], ["Exercise 5.3", "10th-ch05-ex5-3-solution-algebraic-fractions.pdf"], ["Exercise 5.4", "10th-ch05-ex5-4-solution-algebraic-fractions.pdf"], ["Exercise 5.5", "10th-ch05-ex5-5-solution-algebraic-fractions.pdf"]], review: "10th-ch05-review-solution-algebraic-fractions.pdf", examples: "10th-ch05-examples-solutions-algebraic-fractions.pdf", extras: [["Skilled Practice & Challenge", "10th-ch05-skilled-practice-challenge-solutions-algebraic-fractions.pdf"]] },
+        "10th-ch06-vectors-in-plane": { exercises: [["Exercise 6.1", "10th-ch06-ex6-1-solution-vectors-in-plane.pdf"], ["Exercise 6.2", "10th-ch06-ex6-2-solution-vectors-in-plane.pdf"], ["Exercise 6.3", "10th-ch06-ex6-3-solution-vectors-in-plane.pdf"]], review: "10th-ch06-review-solution-vectors-in-plane.pdf", examples: "10th-ch06-examples-solutions-vectors-in-plane.pdf", extras: [["Activity", "10th-ch06-activity-solution-vectors-in-plane.pdf"], ["Skilled Practice & Challenge", "10th-ch06-skilled-practice-challenge-solutions-vectors-in-plane.pdf"]] },
+        "10th-ch07-trigonometry": { exercises: [["Exercise 7.1", "10th-ch07-ex7-1-solution-trigonometry.pdf"], ["Exercise 7.2", "10th-ch07-ex7-2-solution-trigonometry.pdf"], ["Exercise 7.3", "10th-ch07-ex7-3-solution-trigonometry.pdf"], ["Exercise 7.4", "10th-ch07-ex7-4-solution-trigonometry.pdf"]], review: "10th-ch07-review-solution-trigonometry.pdf", examples: "10th-ch07-examples-solutions-trigonometry.pdf", extras: [["Skilled Practice & Challenge", "10th-ch07-skilled-practice-challenge-solutions-trigonometry.pdf"]] },
+        "10th-ch08-chords-and-arcs-of-a-circle": { exercises: [["Exercise 8.1", "10th-ch08-ex8-1-solution-chords-and-arcs-of-a-circle.pdf"], ["Exercise 8.2", "10th-ch08-ex8-2-solution-chords-and-arcs-of-a-circle.pdf"]], review: "10th-ch08-review-solution-chords-and-arcs-of-a-circle.pdf", examples: "10th-ch08-examples-solutions-chords-and-arcs-of-a-circle.pdf", extras: [["Skilled Practice & Challenge", "10th-ch08-skilled-practice-challenge-solutions-chords-and-arcs-of-a-circle.pdf"]] },
+        "10th-ch09-tangent-and-angles-of-a-circle": { exercises: [["Exercise 9.1", "10th-ch09-ex9-1-solution-tangent-and-angles-of-a-circle.pdf"], ["Exercise 9.2", "10th-ch09-ex9-2-solution-tangent-and-angles-of-a-circle.pdf"]], review: "10th-ch09-review-solution-tangent-and-angles-of-a-circle.pdf", examples: "10th-ch09-examples-solutions-tangent-and-angles-of-a-circle.pdf", extras: [["Skilled Practice & Challenge", "10th-ch09-skilled-practice-challenge-solutions-tangent-and-angles-of-a-circle.pdf"]] },
+        "10th-ch10-practical-geometry-of-circles": { exercises: [["Exercise 10.1", "10th-ch10-ex10-1-solution-practical-geometry-of-circles.pdf"], ["Exercise 10.2", "10th-ch10-ex10-2-solution-practical-geometry-of-circles.pdf"]], review: "10th-ch10-review-solution-practical-geometry-of-circles.pdf", examples: "10th-ch10-examples-solutions-practical-geometry-of-circles.pdf" },
+        "10th-ch11-information-handling": { exercises: [["Exercise 11.1", "10th-ch11-ex11-1-solution-information-handling.pdf"], ["Exercise 11.2", "10th-ch11-ex11-2-solution-information-handling.pdf"]], review: "10th-ch11-review-solution-information-handling.pdf", examples: "10th-ch11-examples-solutions-information-handling.pdf", extras: [["Skilled Practice & Challenge", "10th-ch11-skilled-practice-challenge-solutions-information-handling.pdf"]] },
+        "10th-ch12-probability": { exercises: [["Exercise 12.1", "10th-ch12-ex12-1-solution-probability.pdf"], ["Exercise 12.2", "10th-ch12-ex12-2-solution-probability.pdf"], ["Exercise 12.3", "10th-ch12-ex12-3-solution-probability.pdf"]], review: "10th-ch12-review-solution-probability.pdf", examples: "10th-ch12-examples-solutions-probability.pdf", extras: [["Skilled Practice & Challenge", "10th-ch12-skilled-practice-challenge-solutions-probability.pdf"]] }
       };
       (function renderFileBooks() {
         var host = $("fileBookList");
@@ -3900,38 +3963,62 @@
           var tag = document.createElement("span"); tag.className = "lesson-tag"; tag.textContent = "PECTAA Textbook";
           var h = document.createElement("h3"); h.textContent = book.title;
           var sub = document.createElement("p"); sub.className = "lesson-sub";
-          sub.textContent = book.chapters.length + " chapters · " + totalEx + " exercises. Tap a chapter to see its exercises; the chapter and exercise PDFs each open in a new tab.";
+          sub.textContent = totalEx > 0
+            ? book.chapters.length + " chapters · " + totalEx + " exercises. Tap a chapter to see its exercises; the chapter and exercise PDFs each open in a new tab."
+            : book.chapters.length + " chapters. Tap a chapter to see its solutions; the solution PDFs each open in a new tab.";
           art.appendChild(tag); art.appendChild(h); art.appendChild(sub);
           var wrap = document.createElement("div"); wrap.className = "file-chapters";
           book.chapters.forEach(function (ch) {
             var row = document.createElement("div"); row.className = "file-chapter";
             var head = document.createElement("div"); head.className = "file-chapter-head";
+            var sol = FILE_SOLUTIONS[ch.solKey || ch.pdf];
+            var itemCount = ch.exercises.length, itemWord = itemCount === 1 ? " exercise" : " exercises";
+            if (!itemCount && sol) {
+              itemCount = sol.exercises.length + (sol.review ? 1 : 0) + (sol.examples ? 1 : 0) + (sol.extras ? sol.extras.length : 0);
+              itemWord = itemCount === 1 ? " solution" : " solutions";
+            }
             var toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "file-chapter-toggle";
             toggle.setAttribute("aria-expanded", "false");
             toggle.innerHTML = '<span class="file-caret" aria-hidden="true">\u25B8</span>';
-            toggle.appendChild(document.createTextNode("Chapter " + ch.n + ": " + ch.title + " (" + ch.exercises.length + (ch.exercises.length === 1 ? " exercise" : " exercises") + ")"));
-            var chLink = document.createElement("a"); chLink.className = "btn"; chLink.href = "assets/" + ch.pdf;
-            chLink.target = "_blank"; chLink.rel = "noopener"; chLink.textContent = "Read full chapter (PDF)";
-            head.appendChild(toggle); head.appendChild(chLink);
+            toggle.appendChild(document.createTextNode("Chapter " + ch.n + ": " + ch.title + " (" + itemCount + itemWord + ")"));
+            head.appendChild(toggle);
+            if (ch.pdf) {
+              var chLink = document.createElement("a"); chLink.className = "btn"; chLink.href = "assets/" + ch.pdf;
+              chLink.target = "_blank"; chLink.rel = "noopener noreferrer"; chLink.textContent = "Read full chapter (PDF)";
+              head.appendChild(chLink);
+            }
             var ul = document.createElement("ul"); ul.className = "file-exercises"; ul.hidden = true;
             ch.exercises.forEach(function (ex) {
               var li = document.createElement("li");
               var a = document.createElement("a"); a.href = "assets/exercises/" + ex[1];
-              a.target = "_blank"; a.rel = "noopener"; a.textContent = ex[0] + " (PDF)";
+              a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = ex[0] + " (PDF)";
               li.appendChild(a); ul.appendChild(li);
             });
-            var sol = FILE_SOLUTIONS[ch.pdf];
             if (sol) {
               sol.exercises.forEach(function (sx) {
                 var sli = document.createElement("li");
                 var sa = document.createElement("a"); sa.href = "assets/solutions/" + sx[1];
-                sa.target = "_blank"; sa.rel = "noopener"; sa.textContent = sx[0] + " \u2014 Solutions (PDF)";
+                sa.target = "_blank"; sa.rel = "noopener noreferrer"; sa.textContent = sx[0] + " \u2014 Solutions (PDF)";
                 sli.appendChild(sa); ul.appendChild(sli);
               });
+              if (sol.review) {
+                var rli = document.createElement("li");
+                var ra = document.createElement("a"); ra.href = "assets/solutions/" + sol.review;
+                ra.target = "_blank"; ra.rel = "noopener noreferrer"; ra.textContent = "Review \u2014 Solutions (PDF)";
+                rli.appendChild(ra); ul.appendChild(rli);
+              }
               var eli = document.createElement("li");
               var ea = document.createElement("a"); ea.href = "assets/solutions/" + sol.examples;
-              ea.target = "_blank"; ea.rel = "noopener"; ea.textContent = "Worked Examples \u2014 Solutions (PDF)";
+              ea.target = "_blank"; ea.rel = "noopener noreferrer"; ea.textContent = "Worked Examples \u2014 Solutions (PDF)";
               eli.appendChild(ea); ul.appendChild(eli);
+              if (sol.extras) {
+                sol.extras.forEach(function (xt) {
+                  var xli = document.createElement("li");
+                  var xa = document.createElement("a"); xa.href = "assets/solutions/" + xt[1];
+                  xa.target = "_blank"; xa.rel = "noopener noreferrer"; xa.textContent = xt[0] + " \u2014 Solutions (PDF)";
+                  xli.appendChild(xa); ul.appendChild(xli);
+                });
+              }
             }
             toggle.addEventListener("click", function () {
               var open = ul.hidden;
