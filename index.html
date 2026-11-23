@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tessdata.projectnaptha.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.gstatic.com; worker-src 'self' blob: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tessdata.projectnaptha.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; frame-src 'self' https://mathsguru-7491c.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="icon" href="data:," />
     <title>MathsGuru — All FSc Maths: Class 11 &amp; 12 Complete Notes, Formulas &amp; Solved Questions</title>
@@ -349,6 +349,26 @@
       .auth-msg.ok { background: var(--green-soft); }
       .auth-msg.err { background: var(--red-soft); }
 
+      /* Front cover (ELEARN splash style) + sign-in gate.
+         Signed out: only the cover, then the Sign In / Sign Up screens.
+         Signed in: cover and auth screens hidden, full site visible. */
+      #coverPage { display: none; }
+      body.gate-locked footer.site { display: none; }
+      body.gate-locked nav.main { display: none; }
+      body.gate-cover main { display: none; }
+      body.gate-cover #coverPage { display: flex; }
+      body.gate-locked.gate-auth main .wrap > *:not(#account) { display: none; }
+      body:not(.gate-locked) #account { display: none; }
+      .cover { flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: calc(100vh - 61px); min-height: calc(100svh - 61px); padding: 56px 20px 150px; background: linear-gradient(to top, #1b7ec2 0%, #57a8dc 20%, rgba(87, 168, 220, 0) 52%), #ffffff; }
+      .cover-logo { display: flex; align-items: center; gap: 13px; }
+      .cover-logo .auth-logo-mark { width: 66px; height: 66px; border-radius: 15px; font-size: 2.3rem; }
+      .cover-logo .auth-logo-text { font-size: 2.7rem; }
+      .cover-tag { color: var(--ink-soft); font-size: 1.05rem; max-width: 44ch; margin: 18px 0 0; }
+      .cover-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 32px; }
+      .cover-btns .btn { padding: 13px 32px; font-size: 1.05rem; }
+      .cover-msg { display: none; margin-top: 22px; max-width: 46ch; background: var(--red-soft); color: var(--ink); border-radius: 8px; padding: 12px 16px; font-size: .95rem; }
+      .cover-msg.show { display: block; }
+
       .notes-btn { margin-top: 12px; font-size: .9rem; padding: 7px 13px; }
       .level-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 34px; }
       .level-head h3 { font-size: 1.35rem; font-weight: 800; color: var(--ink); }
@@ -535,7 +555,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="gate-locked gate-cover">
     <header class="site">
       <div class="wrap header-in">
         <a class="brand" href="#top" aria-label="MathsGuru home"><span class="sigma">∑</span>Maths<span class="guru">Guru</span></a>
@@ -558,6 +578,16 @@
         </div>
       </div>
     </header>
+
+    <section id="coverPage" class="cover" aria-label="Welcome to MathsGuru">
+      <div class="cover-logo" aria-hidden="true"><span class="auth-logo-mark">∑</span><span class="auth-logo-text">MathsGuru</span></div>
+      <p class="cover-tag">All your maths in one place — Class 9 to 12 books, a step-by-step solver, solved exercises and quizzes.</p>
+      <div class="cover-msg" id="coverMsg" role="alert"></div>
+      <div class="cover-btns">
+        <button type="button" class="btn primary" id="coverLoginBtn">Sign In</button>
+        <button type="button" class="btn" id="coverSignupBtn">Create Account</button>
+      </div>
+    </section>
 
     <main id="top">
       <div class="wrap">
@@ -1789,6 +1819,10 @@
         <p>© 2026 MathsGuru. Made for FSc maths students.</p>
       </div>
     </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
     <script>
     (function () {
@@ -3737,64 +3771,205 @@
       });
       $("quizAgainBtn").addEventListener("click", function () { showQuizScreen("start"); });
 
-      /* ---------- accounts (this session) ---------- */
-      var account = null, currentUser = null;
+      /* ---------- accounts (Firebase Auth — real accounts, any device) ---------- */
+      var currentUser = null;
       function setTab(which) {
         $("tabSignup").setAttribute("aria-selected", which === "signup" ? "true" : "false");
         $("tabLogin").setAttribute("aria-selected", which === "login" ? "true" : "false");
         $("signupForm").hidden = which !== "signup";
         $("loginForm").hidden = which !== "login";
       }
+      /* Front cover + sign-in gate: while signed out only the cover and the
+         Sign In / Sign Up screens are visible; once signed in the cover and
+         auth screens hide and the full site opens on the dashboard. */
+      function showCover() {
+        document.body.classList.add("gate-locked");
+        document.body.classList.add("gate-cover");
+        document.body.classList.remove("gate-auth");
+      }
+      function showAuth() {
+        document.body.classList.add("gate-locked");
+        document.body.classList.remove("gate-cover");
+        document.body.classList.add("gate-auth");
+      }
+      function showApp() {
+        document.body.classList.remove("gate-locked");
+        document.body.classList.remove("gate-cover");
+        document.body.classList.remove("gate-auth");
+      }
       $("tabSignup").addEventListener("click", function () { setTab("signup"); });
       $("tabLogin").addEventListener("click", function () { setTab("login"); });
-      $("loginLink").addEventListener("click", function () { setTab("login"); });
-      $("signupLink").addEventListener("click", function () { setTab("signup"); });
+      $("loginLink").addEventListener("click", function () { setTab("login"); showAuth(); });
+      $("signupLink").addEventListener("click", function () { setTab("signup"); showAuth(); });
+      $("coverLoginBtn").addEventListener("click", function () { setTab("login"); showAuth(); });
+      $("coverSignupBtn").addEventListener("click", function () { setTab("signup"); showAuth(); });
       function showMsg(id, text, ok) {
         var el = $(id);
         el.textContent = text;
         el.className = "auth-msg show " + (ok ? "ok" : "err");
       }
       function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
-      function setLoggedIn(name) {
+      function setLoggedIn(name, email) {
         currentUser = name;
         $("userChip").style.display = "inline-flex";
-        $("userChipName").textContent = "👋 " + name;
+        $("userChipName").textContent = "👋 " + name + (email ? " (" + email + ")" : "");
         $("loginLink").style.display = "none";
         $("signupLink").style.display = "none";
       }
-      $("signupForm").addEventListener("submit", function (ev) {
-        ev.preventDefault();
-        var name = $("suName").value.trim(), email = $("suEmail").value.trim(), pw = $("suPassword").value;
-        if (name.length < 2) return showMsg("signupMsg", "Please enter your full name.", false);
-        if (!validEmail(email)) return showMsg("signupMsg", "Please enter a valid email address.", false);
-        if (pw.length < 6) return showMsg("signupMsg", "Your password needs at least 6 characters.", false);
-        account = { name: name, email: email, password: pw };
-        setLoggedIn(name);
-        showMsg("signupMsg", "Account created — welcome to MathsGuru, " + name + "! You are now logged in.", true);
-      });
-      $("loginForm").addEventListener("submit", function (ev) {
-        ev.preventDefault();
-        var email = $("liEmail").value.trim(), pw = $("liPassword").value;
-        if (!validEmail(email)) return showMsg("loginMsg", "Please enter a valid email address.", false);
-        if (!account) return showMsg("loginMsg", "No account found for this browser session yet — sign up first using the Sign Up tab.", false);
-        if (account.email !== email) return showMsg("loginMsg", "That email does not match the account created in this session.", false);
-        if (account.password !== pw) return showMsg("loginMsg", "Incorrect password — please try again.", false);
-        setLoggedIn(account.name);
-        showMsg("loginMsg", "Welcome back, " + account.name + "! You are logged in.", true);
-      });
-      $("logoutBtn").addEventListener("click", function () {
+      function setLoggedOut() {
         currentUser = null;
         $("userChip").style.display = "none";
         $("loginLink").style.display = "";
         $("signupLink").style.display = "";
+      }
+      function authError(err, isLogin) {
+        var c = err && err.code ? err.code : "";
+        if (c === "auth/email-already-in-use") return "An account with this email already exists — use the Sign In tab.";
+        if (c === "auth/weak-password") return "That password is too weak — use at least 6 characters.";
+        if (c === "auth/invalid-email") return "Please enter a valid email address.";
+        if (c === "auth/network-request-failed") return "Network problem — check your internet connection and try again.";
+        if (c === "auth/too-many-requests") return "Too many attempts — please wait a few minutes and try again.";
+        if (isLogin && (c === "auth/user-not-found" || c === "auth/wrong-password" || c === "auth/invalid-credential")) return "That email and password do not match an account — check them, or sign up first.";
+        return "Something went wrong — please try again.";
+      }
+      /* Firebase web config: these values are PUBLIC identifiers for the web app,
+         not secrets (access is controlled by Firebase Auth + project rules). */
+      var firebaseConfig = {
+        apiKey: "AIzaSyDZztOub4EJvXPviIUT8-ApOkaJ1vDyDzc",
+        authDomain: "mathsguru-7491c.firebaseapp.com",
+        projectId: "mathsguru-7491c",
+        storageBucket: "mathsguru-7491c.firebasestorage.app",
+        messagingSenderId: "1072545634241",
+        appId: "1:1072545634241:web:628c9a58c88da6a76f4140"
+      };
+      var auth = null;
+      try {
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+      } catch (e) { auth = null; }
+      var db = null;
+      try { db = firebase.firestore(); } catch (e) { db = null; }
+      function noAuth(id) { showMsg(id, "Could not connect — check your internet connection and reload the page.", false); }
+      /* My Courses: the course cards attached to the signed-in account
+         (Firestore users/{uid}.courses). Passing null — signed out, no
+         Firestore, or any Firestore error — shows all four, as before. */
+      var DEFAULT_COURSES = ["math9", "math10", "math11", "math12"];
+      var COURSE_TITLES = { math9: "Math 9", math10: "Math 10", math11: "Math 11", math12: "Math 12" };
+      function applyMyCourses(ids) {
+        var host = $("fileBookList");
+        if (!host) return;
+        var cards = host.querySelectorAll(".course-card");
+        for (var i = 0; i < cards.length; i++) {
+          if (!ids) { cards[i].style.display = ""; continue; }
+          var h = cards[i].querySelector("h3");
+          var title = h ? h.textContent.replace(/\s+/g, " ").trim() : "";
+          var show = false;
+          for (var k = 0; k < ids.length; k++) { if (COURSE_TITLES[ids[k]] === title) { show = true; break; } }
+          cards[i].style.display = show ? "" : "none";
+        }
+      }
+      function createUserDoc(user, name) {
+        if (!db || !user) return;
+        try {
+          db.collection("users").doc(user.uid).set({
+            name: name || user.displayName || "",
+            email: user.email || "",
+            courses: DEFAULT_COURSES.slice(),
+            createdAt: new Date().toISOString()
+          }).then(function () {}, function () {});
+        } catch (e) {}
+      }
+      function loadUserCourses(user) {
+        if (!db || !user) { applyMyCourses(null); return; }
+        try {
+          db.collection("users").doc(user.uid).get().then(function (snap) {
+            if (snap && snap.exists) {
+              var d = snap.data() || {};
+              var c = d.courses;
+              applyMyCourses(Object.prototype.toString.call(c) === "[object Array]" && c.length ? c : null);
+            } else {
+              createUserDoc(user, user.displayName || "");
+              applyMyCourses(DEFAULT_COURSES);
+            }
+          }, function () { applyMyCourses(null); });
+        } catch (e) { applyMyCourses(null); }
+      }
+      if (auth) {
+        auth.onAuthStateChanged(function (user) {
+          if (user) {
+            setLoggedIn(user.displayName || user.email, user.email);
+            showApp();
+            loadUserCourses(user);
+          } else {
+            setLoggedOut();
+            applyMyCourses(null);
+            if (document.body.classList.contains("gate-auth")) document.body.classList.add("gate-locked");
+            else showCover();
+          }
+        });
+      } else {
+        /* The Firebase SDK could not load or start: stay on the cover,
+           keep the content locked, and tell the student why. */
+        var coverMsg = $("coverMsg");
+        if (coverMsg) {
+          coverMsg.textContent = "Could not connect — check your internet connection and reload the page.";
+          coverMsg.className = "cover-msg show";
+        }
+      }
+      $("signupForm").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        if (!auth) return noAuth("signupMsg");
+        var name = $("suName").value.trim(), email = $("suEmail").value.trim(), pw = $("suPassword").value;
+        if (name.length < 2) return showMsg("signupMsg", "Please enter your full name.", false);
+        if (!validEmail(email)) return showMsg("signupMsg", "Please enter a valid email address.", false);
+        if (pw.length < 6) return showMsg("signupMsg", "Your password needs at least 6 characters.", false);
+        auth.createUserWithEmailAndPassword(email, pw).then(function (cred) {
+          return cred.user.updateProfile({ displayName: name }).then(function () {
+            setLoggedIn(name, email);
+            showApp();
+            createUserDoc(cred.user, name);
+            applyMyCourses(DEFAULT_COURSES);
+            showMsg("signupMsg", "Account created — welcome to MathsGuru, " + name + "! You are now logged in.", true);
+            $("suPassword").value = "";
+          });
+        }).catch(function (err) { showMsg("signupMsg", authError(err, false), false); });
       });
-      /* Sign In / Sign Up screen switch links + Forgot Password note
-         (presentation only — the account behaviour above is unchanged). */
+      $("loginForm").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        if (!auth) return noAuth("loginMsg");
+        var email = $("liEmail").value.trim(), pw = $("liPassword").value;
+        if (!validEmail(email)) return showMsg("loginMsg", "Please enter a valid email address.", false);
+        var persistence = $("rememberMe").checked
+          ? firebase.auth.Auth.Persistence.LOCAL
+          : firebase.auth.Auth.Persistence.SESSION;
+        auth.setPersistence(persistence).then(function () {
+          return auth.signInWithEmailAndPassword(email, pw);
+        }).then(function (cred) {
+          var nm = cred.user.displayName || cred.user.email;
+          setLoggedIn(nm, cred.user.email);
+          showApp();
+          loadUserCourses(cred.user);
+          showMsg("loginMsg", "Welcome back, " + nm + "! You are logged in.", true);
+          $("liPassword").value = "";
+        }).catch(function (err) { showMsg("loginMsg", authError(err, true), false); });
+      });
+      $("logoutBtn").addEventListener("click", function () {
+        if (auth) auth.signOut();
+        setLoggedOut();
+        applyMyCourses(null);
+        showCover();
+      });
+      /* Sign In / Sign Up screen switch links + Forgot Password (real reset email). */
       $("toLoginLink").addEventListener("click", function (ev) { ev.preventDefault(); setTab("login"); });
       $("toSignupLink").addEventListener("click", function (ev) { ev.preventDefault(); setTab("signup"); });
       $("forgotLink").addEventListener("click", function (ev) {
         ev.preventDefault();
-        showMsg("loginMsg", "MathsGuru accounts work in this browser session only, so there is no password-reset email. If you created an account in this session, sign in with the same email and password — otherwise use the Sign Up tab to create one.", false);
+        if (!auth) return noAuth("loginMsg");
+        var email = $("liEmail").value.trim();
+        if (!validEmail(email)) return showMsg("loginMsg", "Type your account email in the Username box above first, then tap Forgot Password again.", false);
+        auth.sendPasswordResetEmail(email).then(function () {
+          showMsg("loginMsg", "Password reset email sent to " + email + " — check your inbox and follow the link to set a new password.", true);
+        }).catch(function (err) { showMsg("loginMsg", authError(err, true), false); });
       });
 
       /* ---------- PDF notes: data ---------- */
