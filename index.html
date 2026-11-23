@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tessdata.projectnaptha.com; object-src 'none'; base-uri 'self'; form-action 'self'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="icon" href="data:," />
@@ -47,53 +47,26 @@
       * { box-sizing: border-box; }
       [hidden] { display: none !important; }
       :root {
-        --bg: #eef3f9;
-        --bg-soft: #e0ebf5;
+        --bg: #ffffff;
+        --bg-soft: #f2f7fb;
         --card: #ffffff;
-        --ink: #10233a;
-        --ink-soft: #43596f;
-        --line: #c7d8ea;
-        --accent: #0b7a8c;
-        --accent-dark: #075a75;
-        --accent-soft: #dff1f5;
-        --brand: #0a4d8c;
-        --amber: #d98e1c;
-        --amber-soft: #fbf0da;
+        --ink: #173042;
+        --ink-soft: #5a7186;
+        --line: #dce6ee;
+        --accent: #1b7ec2;
+        --accent-dark: #12639c;
+        --accent-soft: #e9f4fb;
+        --brand: #1b7ec2;
+        --amber: #b97d10;
+        --amber-soft: #fbf2dc;
         --red: #b3372c;
         --red-soft: #fbe9e6;
-        --green-soft: #e1f3e8;
-        --board: #0b3556;
-        --board-ink: #eaf3fb;
-        --shadow: 0 12px 32px rgba(10, 61, 117, .10);
-        --shadow-lg: 0 22px 46px rgba(10, 61, 117, .16);
-        --hero-grad: linear-gradient(130deg, #07294d 0%, #0a4d8c 48%, #0b7a8c 100%);
-        --btn-grad: linear-gradient(120deg, #0a4d8c, #0b7a8c);
+        --green-soft: #e2f2e7;
+        --board: #1b7ec2;
+        --board-ink: #ffffff;
+        --shadow: 0 1px 4px rgba(23, 48, 66, .05);
+        --shadow-lg: 0 4px 18px rgba(23, 48, 66, .07);
         --radius: 14px;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0a111d;
-          --bg-soft: #0f1a2b;
-          --card: #122036;
-          --ink: #e9eff7;
-          --ink-soft: #a4b6ca;
-          --line: #243a55;
-          --accent: #3fb9cf;
-          --accent-dark: #63cadd;
-          --accent-soft: #0d2f3d;
-          --brand: #2f7fd0;
-          --amber: #eda93f;
-          --amber-soft: #33270f;
-          --red: #ef8a7d;
-          --red-soft: #3a1e1a;
-          --green-soft: #14352a;
-          --board: #0d2c49;
-          --board-ink: #e8f2fb;
-          --shadow: 0 12px 32px rgba(0,0,0,.4);
-          --shadow-lg: 0 22px 46px rgba(0,0,0,.5);
-          --hero-grad: linear-gradient(130deg, #041a33 0%, #073763 48%, #075a68 100%);
-          --btn-grad: linear-gradient(120deg, #0a4d8c, #0b7a8c);
-        }
       }
       html { scroll-behavior: smooth; }
       body {
@@ -106,7 +79,7 @@
       }
       .wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
       a { color: var(--accent-dark); }
-      h1, h2, h3 { font-family: "Source Serif 4", Georgia, serif; line-height: 1.15; margin: 0; }
+      h1, h2, h3 { font-family: "Public Sans", system-ui, sans-serif; line-height: 1.2; margin: 0; }
       .math { font-family: "Source Serif 4", Georgia, serif; font-style: italic; font-size: 1.06em; white-space: nowrap; }
       .math sup, .math sub { font-size: .68em; }
       .frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0 .15em; font-size: .82em; line-height: 1.25; }
@@ -114,147 +87,144 @@
       .frac > span:last-child { padding: 0 .3em; }
       .vec { font-style: normal; font-weight: 700; }
 
-      /* Header */
+      /* Header — plain white app bar */
       header.site {
         position: sticky; top: 0; z-index: 40;
-        background: color-mix(in srgb, var(--bg) 88%, transparent);
-        backdrop-filter: blur(10px);
+        background: #ffffff;
         border-bottom: 1px solid var(--line);
-        box-shadow: 0 4px 18px rgba(10, 61, 117, .06);
       }
       .header-in { display: flex; align-items: center; gap: 18px; padding: 10px 0; flex-wrap: wrap; }
-      .brand { font-family: "Source Serif 4", Georgia, serif; font-weight: 900; font-size: 1.55rem; color: var(--ink); text-decoration: none; letter-spacing: -.01em; }
+      .brand { font-weight: 800; font-size: 1.45rem; color: var(--accent); text-decoration: none; letter-spacing: -.01em; }
       .brand .guru { color: var(--accent); }
-      .brand .sigma { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--btn-grad); color: #fff; font-size: 1.15rem; margin-right: 9px; vertical-align: -6px; font-style: italic; box-shadow: 0 4px 10px rgba(10, 77, 140, .3); }
-      nav.main { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
-      nav.main a { color: var(--ink-soft); text-decoration: none; font-weight: 600; font-size: .95rem; padding: 8px 12px; border-radius: 999px; min-height: 2.25rem; display: inline-flex; align-items: center; transition: color .2s ease, background .2s ease; }
-      nav.main a:hover { color: var(--accent-dark); background: var(--accent-soft); }
+      .brand .sigma { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 1.15rem; margin-right: 9px; vertical-align: -6px; font-style: italic; font-family: "Source Serif 4", Georgia, serif; }
+      nav.main { display: flex; gap: 2px; margin-left: auto; flex-wrap: wrap; }
+      nav.main a { color: var(--ink-soft); text-decoration: none; font-weight: 600; font-size: .95rem; padding: 8px 11px; border-radius: 8px; min-height: 2.25rem; display: inline-flex; align-items: center; transition: color .2s ease, background .2s ease; }
+      nav.main a:hover { color: var(--accent); background: var(--accent-soft); }
       .auth-btns { display: flex; gap: 8px; align-items: center; }
       .btn {
-        font: inherit; font-weight: 700; cursor: pointer; border-radius: 10px;
-        border: 1px solid var(--line); background: var(--card); color: var(--ink);
+        font: inherit; font-weight: 700; cursor: pointer; border-radius: 8px;
+        border: 1px solid var(--line); background: var(--card); color: var(--accent-dark);
         padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, filter .2s ease;
+        transition: border-color .2s ease, background .2s ease, color .2s ease;
       }
-      .btn:hover { border-color: var(--accent); }
-      .btn.primary { background: var(--btn-grad); border-color: transparent; color: #fff; box-shadow: 0 6px 16px rgba(10, 77, 140, .25); }
-      .btn.primary:hover { background: var(--btn-grad); border-color: transparent; filter: brightness(1.09); }
+      .btn:hover { border-color: var(--accent); color: var(--accent); }
+      .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
       ::selection { background: var(--accent-soft); }
-      :focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
-      .btn.large { padding: 12px 26px; font-size: 1.05rem; border-radius: 12px; }
-      .user-chip { font-weight: 700; font-size: .92rem; color: var(--accent-dark); background: var(--accent-soft); padding: 7px 13px; border-radius: 999px; display: none; align-items: center; gap: 8px; }
-      .user-chip button { background: none; border: none; color: inherit; font: inherit; font-size: .82rem; cursor: pointer; text-decoration: underline; padding: 2px; min-height: 0; }
+      :focus-visible { outline: 3px solid rgba(27, 126, 194, .45); outline-offset: 2px; }
+      .btn.large { padding: 12px 26px; font-size: 1.05rem; border-radius: 8px; }
+      .user-chip { font-weight: 700; font-size: .92rem; color: var(--accent-dark); background: var(--accent-soft); border: 1px solid var(--line); padding: 7px 13px; border-radius: 999px; display: none; align-items: center; gap: 8px; }
+      .user-chip button { background: none; border: none; color: var(--accent); font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 2px; min-height: 0; }
 
-      /* Hero + solver */
+      /* Welcome area — white, blue heading (LMS dashboard style) */
       .hero {
-        position: relative; overflow: hidden; text-align: center;
-        background: var(--hero-grad); color: #fff;
-        border-radius: 26px; padding: 46px 30px 42px; margin-top: 24px;
-        box-shadow: var(--shadow-lg);
+        text-align: left;
+        background: #ffffff; color: var(--ink);
+        border: 1px solid var(--line); border-radius: 14px;
+        padding: 30px 28px 26px; margin-top: 22px;
+        box-shadow: var(--shadow);
       }
-      .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.08); pointer-events: none; }
-      .hero::before { width: 340px; height: 340px; right: -120px; top: -170px; }
-      .hero::after { width: 220px; height: 220px; left: -80px; bottom: -130px; }
-      .hero h1 { position: relative; color: #fff; font-size: clamp(2.1rem, 5.4vw, 3.4rem); font-weight: 900; letter-spacing: -.015em; max-width: 820px; margin: 0 auto; }
-      .hero h1 em { color: #ffc95e; font-style: italic; }
-      .hero p.lede { position: relative; color: rgba(255,255,255,.88); font-size: 1.13rem; max-width: 640px; margin: 16px auto 0; }
-      .hero p.lede b { color: #fff; }
-      .hero-stats { position: relative; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 24px; }
-      .hero-stats span { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28); color: #fff; font-weight: 700; font-size: .9rem; padding: 8px 14px; border-radius: 999px; }
+      .hero h1 { color: var(--accent); font-size: clamp(1.8rem, 4.6vw, 2.6rem); font-weight: 800; letter-spacing: -.015em; max-width: 820px; }
+      .hero h1 em { color: var(--accent); font-style: normal; text-decoration: underline; text-decoration-color: #9fd0ee; text-decoration-thickness: 3px; text-underline-offset: 5px; }
+      .hero p.lede { color: var(--ink-soft); font-size: 1.08rem; max-width: 680px; margin: 12px 0 0; }
+      .hero p.lede b { color: var(--ink); }
+      .hero-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+      .hero-stats span { background: var(--accent-soft); border: 1px solid var(--line); color: var(--accent-dark); font-weight: 700; font-size: .88rem; padding: 7px 13px; border-radius: 999px; }
+
+      /* Solver — the main Ask / Solve card */
       .solver-card {
-        background: linear-gradient(var(--card), var(--card)) padding-box, var(--btn-grad) border-box;
-        border: 1.5px solid transparent; border-radius: 22px;
-        box-shadow: var(--shadow-lg); padding: 26px; margin: 30px auto 0; max-width: 820px; text-align: left;
+        background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+        box-shadow: var(--shadow-lg); padding: 26px; margin: 22px auto 0; max-width: 820px; text-align: left;
       }
-      .solver-card label { font-weight: 800; font-size: .82rem; letter-spacing: .09em; text-transform: uppercase; color: var(--accent-dark); display: block; margin-bottom: 10px; }
+      .solver-card label { font-weight: 700; font-size: .85rem; letter-spacing: .02em; color: var(--accent); display: block; margin-bottom: 10px; }
       .solver-row { display: flex; gap: 10px; }
       .solver-row input {
-        flex: 1; font: inherit; font-size: 1.12rem; padding: 13px 16px; border-radius: 12px;
-        border: 2px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0;
+        flex: 1; font: inherit; font-size: 1.08rem; padding: 12px 14px; border-radius: 8px;
+        border: 1px solid var(--line); background: #fff; color: var(--ink); min-width: 0;
       }
-      .solver-row input:focus { outline: none; border-color: var(--accent); }
+      .solver-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27, 126, 194, .15); }
       .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
       .chip {
         font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer;
-        background: var(--bg-soft); border: 1px solid var(--line); color: var(--ink-soft);
+        background: #fff; border: 1px solid var(--line); color: var(--ink-soft);
         padding: 7px 13px; border-radius: 999px; min-height: 2.25rem;
       }
-      .chip:hover { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
+      .chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
       .solver-out { margin-top: 22px; display: none; }
       .solver-out.show { display: block; }
       .method-banner {
         display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px;
-        background: var(--btn-grad); color: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 6px;
+        background: var(--accent-soft); border: 1px solid var(--line); color: var(--ink); border-radius: 10px; padding: 14px 18px; margin-bottom: 6px;
       }
-      .method-banner .m-label { font-size: .78rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; opacity: .85; }
-      .method-banner .m-value { font-family: "Source Serif 4", Georgia, serif; font-size: 1.32rem; font-weight: 900; line-height: 1.25; }
-      .method-banner .m-why { flex-basis: 100%; font-size: .92rem; opacity: .92; margin: 0; }
-      .steps-heading { font-family: "Public Sans", sans-serif; font-size: 1.05rem; font-weight: 800; margin: 20px 0 0; }
+      .method-banner .m-label { font-size: .78rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: var(--accent); }
+      .method-banner .m-value { font-family: "Source Serif 4", Georgia, serif; font-size: 1.32rem; font-weight: 900; line-height: 1.25; color: var(--accent-dark); }
+      .method-banner .m-why { flex-basis: 100%; font-size: .92rem; color: var(--ink-soft); margin: 0; }
+      .steps-heading { font-family: "Public Sans", sans-serif; font-size: 1.05rem; font-weight: 800; margin: 20px 0 0; color: var(--ink); }
       .steps-heading span { color: var(--ink-soft); font-weight: 600; font-size: .9rem; }
       .answer-banner {
-        background: var(--board); color: var(--board-ink); border-radius: 14px; padding: 18px 20px; margin-top: 20px;
+        background: var(--board); color: var(--board-ink); border-radius: 10px; padding: 16px 20px; margin-top: 20px;
       }
-      .answer-banner .a-label { font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+      .answer-banner .a-label { font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
       .answer-banner .a-value { font-family: "Source Serif 4", Georgia, serif; font-size: 1.5rem; font-weight: 700; margin-top: 4px; overflow-x: auto; padding-bottom: 2px; }
       .steps { list-style: none; counter-reset: step; margin: 20px 0 0; padding: 0; }
       .steps li { position: relative; padding: 0 0 18px 52px; }
       .steps li::before {
         counter-increment: step; content: counter(step);
         position: absolute; left: 0; top: 1px; width: 34px; height: 34px; border-radius: 50%;
-        background: var(--accent-soft); color: var(--accent-dark); font-weight: 800;
+        background: var(--accent-soft); border: 1px solid #bcdcf2; color: var(--accent-dark); font-weight: 800;
         display: grid; place-items: center; font-size: .95rem;
       }
       .steps li::after { content: ""; position: absolute; left: 16.5px; top: 42px; bottom: 2px; width: 2px; background: var(--line); }
       .steps li:last-child::after { display: none; }
       .steps h4 { margin: 4px 0 4px; font-size: 1.02rem; font-family: "Public Sans", sans-serif; font-weight: 800; }
       .steps p { margin: 0; color: var(--ink-soft); }
-      .steps .fx { display: block; margin-top: 7px; padding: 10px 14px; background: var(--bg-soft); border-radius: 10px; font-family: "Source Serif 4", Georgia, serif; font-style: italic; font-size: 1.08rem; color: var(--ink); overflow-x: auto; }
-      .solver-note { margin-top: 14px; font-size: .9rem; color: var(--ink-soft); background: var(--amber-soft); border-radius: 10px; padding: 12px 14px; display: none; }
+      .steps .fx { display: block; margin-top: 7px; padding: 10px 14px; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px; font-family: "Source Serif 4", Georgia, serif; font-style: italic; font-size: 1.08rem; color: var(--ink); overflow-x: auto; }
+      .solver-note { margin-top: 14px; font-size: .9rem; color: var(--ink-soft); background: var(--amber-soft); border: 1px solid #ecd9a8; border-radius: 8px; padding: 12px 14px; display: none; }
       .solver-note.show { display: block; }
 
       /* Solver graph (drawn under the worked solution) */
       .solver-graph { margin-top: 22px; }
       .graph-heading { font-family: "Public Sans", sans-serif; font-size: 1.05rem; font-weight: 800; margin: 0; }
       .graph-heading span { color: var(--ink-soft); font-weight: 600; font-size: .9rem; }
-      .graph-plot { background: var(--bg-soft); border-radius: 14px; padding: 14px 10px 8px; margin-top: 10px; text-align: center; color: var(--ink); }
+      .graph-plot { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px; padding: 14px 10px 8px; margin-top: 10px; text-align: center; color: var(--ink); }
       .graph-plot svg { max-width: 100%; height: auto; }
       .graph-cap { color: var(--ink-soft); font-size: .93rem; margin: 10px 0 0; }
       .graph-cap .math { color: var(--ink); }
 
       /* Find a solution (book / exercise / question finder) */
       .finder-card {
-        background: var(--card); border: 1px solid var(--line); border-radius: 22px;
-        box-shadow: var(--shadow-lg); padding: 26px; margin: 26px auto 0; max-width: 820px; text-align: left;
+        background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+        box-shadow: var(--shadow-lg); padding: 26px; margin: 22px auto 0; max-width: 820px; text-align: left;
       }
-      .finder-card h2 { font-size: 1.45rem; font-weight: 900; margin: 0; }
+      .finder-card h2 { font-size: 1.4rem; font-weight: 800; margin: 0; color: var(--accent); }
       .finder-card .finder-sub { color: var(--ink-soft); margin: 8px 0 0; }
       .finder-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 18px; }
-      .finder-grid label, .finder-text-label { font-weight: 800; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); display: block; }
+      .finder-grid label, .finder-text-label { font-weight: 700; font-size: .85rem; letter-spacing: 0; text-transform: none; color: var(--accent-dark); display: block; }
       .finder-grid select, .finder-grid input, .finder-row input {
         font: inherit; font-size: 1rem; font-weight: 500; letter-spacing: 0; text-transform: none;
-        width: 100%; margin-top: 7px; padding: 11px 13px; border-radius: 11px;
-        border: 2px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0;
+        width: 100%; margin-top: 7px; padding: 11px 13px; border-radius: 8px;
+        border: 1px solid var(--line); background: #fff; color: var(--ink); min-width: 0;
       }
-      .finder-grid select:focus, .finder-grid input:focus, .finder-row input:focus { outline: none; border-color: var(--accent); }
+      .finder-grid select:focus, .finder-grid input:focus, .finder-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27, 126, 194, .15); }
       .finder-row { display: flex; gap: 10px; margin-top: 14px; }
       .finder-row input { flex: 1; margin-top: 0; }
       .finder-text-label { margin-top: 16px; }
       .finder-out { margin-top: 16px; }
       .finder-out:empty { display: none; }
-      .finder-hit { background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; }
+      .finder-hit { background: var(--accent-soft); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
       .finder-hit b { display: block; font-size: 1.02rem; }
       .finder-hit p { margin: 5px 0 0; color: var(--ink-soft); font-size: .93rem; }
       .finder-hit .btn { margin-top: 10px; }
-      .finder-miss { background: var(--amber-soft); border-radius: 12px; padding: 14px 16px; font-size: .95rem; }
+      .finder-miss { background: var(--amber-soft); border: 1px solid #ecd9a8; border-radius: 10px; padding: 14px 16px; font-size: .95rem; }
       .finder-miss b { display: block; margin-bottom: 3px; }
-      .qa-found { background: var(--amber-soft); border-radius: 12px; box-shadow: 0 0 0 3px var(--amber); padding-left: 12px; padding-right: 12px; transition: background .4s ease, box-shadow .4s ease; }
+      .qa-found { background: var(--amber-soft); border-radius: 10px; box-shadow: 0 0 0 3px var(--amber); padding-left: 12px; padding-right: 12px; transition: background .4s ease, box-shadow .4s ease; }
       article.lesson, .qa { scroll-margin-top: 96px; }
 
       /* Solver file upload: photo or PDF of a question */
       .upload-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
       .upload-hint { font-size: .88rem; color: var(--ink-soft); }
       .solver-card.dragover { outline: 3px dashed var(--accent); outline-offset: -8px; }
-      .upload-preview { display: none; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--bg-soft); }
+      .upload-preview { display: none; margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: var(--bg-soft); }
       .upload-preview.show { display: block; }
       .upload-preview img { max-width: 100%; max-height: 180px; border-radius: 8px; display: block; margin-bottom: 10px; }
       .upload-meta { font-weight: 700; font-size: .92rem; overflow-wrap: anywhere; }
@@ -263,155 +233,180 @@
       .upload-status { margin-top: 10px; font-size: .9rem; color: var(--ink-soft); display: none; }
       .upload-status.show { display: block; }
 
+      /* LMS dashboard menu */
+      .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; margin-top: 24px; }
+      .dash-card { display: flex; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; text-decoration: none; color: var(--ink); box-shadow: var(--shadow); transition: border-color .2s ease, background .2s ease; }
+      .dash-card:hover { border-color: var(--accent); background: #fbfdff; }
+      .dash-icon { flex: none; width: 44px; height: 44px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+      .dash-icon svg { width: 24px; height: 24px; }
+      .dash-text { flex: 1; min-width: 0; }
+      .dash-text b { display: block; font-size: 1.02rem; color: var(--accent-dark); }
+      .dash-text small { display: block; color: var(--ink-soft); font-size: .88rem; margin-top: 1px; }
+      .dash-arrow { flex: none; color: var(--accent); font-size: 1.35rem; font-weight: 700; line-height: 1; }
+
       /* Sections */
-      section.block { padding: 58px 0 6px; }
+      section.block { padding: 52px 0 6px; }
       .sec-head { max-width: 720px; }
-      .sec-head h2 { font-size: clamp(1.7rem, 3.6vw, 2.3rem); font-weight: 900; letter-spacing: -.01em; }
-      .sec-head h2::after { content: ""; display: block; width: 58px; height: 4px; border-radius: 999px; background: var(--btn-grad); margin-top: 12px; }
-      .sec-head p { color: var(--ink-soft); margin: 10px 0 0; font-size: 1.05rem; }
-      .topic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 26px; }
-      .topic-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; text-decoration: none; color: var(--ink); display: block; box-shadow: var(--shadow); transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
-      .topic-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-      .topic-card h3 { font-size: 1.12rem; margin-bottom: 6px; }
+      .sec-head h2 { font-size: clamp(1.55rem, 3.4vw, 2.1rem); font-weight: 800; letter-spacing: -.01em; color: var(--accent); }
+      .sec-head h2::after { content: ""; display: block; width: 52px; height: 3px; border-radius: 999px; background: var(--accent); margin-top: 11px; }
+      .sec-head p { color: var(--ink-soft); margin: 10px 0 0; font-size: 1.03rem; }
+      .topic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 24px; }
+      .topic-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; text-decoration: none; color: var(--ink); display: block; box-shadow: var(--shadow); transition: border-color .2s ease; }
+      .topic-card:hover { border-color: var(--accent); }
+      .topic-card h3 { font-size: 1.08rem; margin-bottom: 6px; color: var(--accent-dark); }
       .topic-card p { margin: 0; color: var(--ink-soft); font-size: .94rem; }
-      .topic-card .try { display: inline-block; margin-top: 12px; font-weight: 700; font-size: .88rem; color: var(--accent-dark); }
+      .topic-card .try { display: inline-block; margin-top: 12px; font-weight: 700; font-size: .88rem; color: var(--accent); }
 
       /* Lessons */
-      article.lesson { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 30px; margin-top: 26px; box-shadow: var(--shadow); }
-      article.lesson .lesson-tag { display: inline-block; background: var(--accent-soft); color: var(--accent-dark); font-weight: 800; font-size: .78rem; letter-spacing: .07em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; }
-      article.lesson h3 { font-size: 1.65rem; font-weight: 900; margin-top: 14px; }
+      article.lesson { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 28px; margin-top: 22px; box-shadow: var(--shadow); }
+      article.lesson .lesson-tag { display: inline-block; background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; font-size: .76rem; letter-spacing: .05em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+      article.lesson h3 { font-size: 1.5rem; font-weight: 800; margin-top: 13px; color: var(--ink); }
       article.lesson .lesson-sub { color: var(--ink-soft); margin: 8px 0 0; }
       .qa { border-top: 1px solid var(--line); padding: 22px 0 4px; margin-top: 22px; }
       .qa:first-of-type { border-top: none; margin-top: 8px; }
       .qa h4 { font-family: "Public Sans", sans-serif; font-size: 1.05rem; margin: 0 0 6px; font-weight: 800; }
-      .qa h4 .qno { color: var(--accent-dark); }
+      .qa h4 .qno { color: var(--accent); }
       .qa p { color: var(--ink-soft); margin: 6px 0; }
-      .qa .fx { display: block; margin: 9px 0; padding: 11px 15px; background: var(--bg-soft); border-radius: 10px; font-family: "Source Serif 4", Georgia, serif; font-style: italic; font-size: 1.1rem; overflow-x: auto; }
-      .qa .result { background: var(--green-soft); border-radius: 10px; padding: 11px 15px; margin: 9px 0; font-family: "Source Serif 4", Georgia, serif; font-size: 1.08rem; }
+      .qa .fx { display: block; margin: 9px 0; padding: 11px 15px; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px; font-family: "Source Serif 4", Georgia, serif; font-style: italic; font-size: 1.1rem; overflow-x: auto; color: var(--ink); }
+      .qa .result { background: var(--green-soft); border-radius: 8px; padding: 11px 15px; margin: 9px 0; font-family: "Source Serif 4", Georgia, serif; font-size: 1.08rem; }
       .qa .result b { font-family: "Public Sans", sans-serif; font-style: normal; font-size: .8rem; letter-spacing: .07em; text-transform: uppercase; color: var(--accent-dark); display: block; margin-bottom: 2px; }
-      .graph-box { background: var(--bg-soft); border-radius: 14px; padding: 18px; margin-top: 14px; text-align: center; }
+      .graph-box { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-top: 14px; text-align: center; }
       .graph-box svg { max-width: 100%; height: auto; }
       .graph-box figcaption { color: var(--ink-soft); font-size: .9rem; margin-top: 8px; }
 
       /* Quiz */
-      .quiz-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 30px; margin-top: 26px; }
-      .quiz-topics { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-      .quiz-topic { font: inherit; font-weight: 700; cursor: pointer; padding: 10px 18px; border-radius: 999px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); }
+      .quiz-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 26px; margin-top: 22px; }
+      .quiz-topics { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+      .quiz-topic { font: inherit; font-weight: 700; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); }
       .quiz-topic[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
       .quiz-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-weight: 700; color: var(--ink-soft); font-size: .93rem; }
-      .progress { height: 9px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; margin-top: 12px; }
+      .progress { height: 8px; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; margin-top: 12px; }
       .progress i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .35s ease; }
       .quiz-q { font-family: "Source Serif 4", Georgia, serif; font-size: 1.3rem; font-weight: 700; margin: 22px 0 16px; }
       .quiz-opts { display: grid; gap: 10px; }
       .quiz-opt {
-        font: inherit; text-align: left; cursor: pointer; padding: 13px 16px; border-radius: 12px;
-        border: 2px solid var(--line); background: var(--bg); color: var(--ink); font-weight: 600; font-size: 1rem;
+        font: inherit; text-align: left; cursor: pointer; padding: 13px 16px; border-radius: 8px;
+        border: 1px solid var(--line); background: #fff; color: var(--ink); font-weight: 600; font-size: 1rem;
         display: flex; gap: 12px; align-items: baseline;
       }
       .quiz-opt .letter { font-weight: 800; color: var(--ink-soft); }
       .quiz-opt:hover:not(:disabled) { border-color: var(--accent); }
       .quiz-opt:disabled { cursor: default; opacity: .92; }
-      .quiz-opt.correct { border-color: var(--accent); background: var(--green-soft); }
+      .quiz-opt.correct { border-color: #3d9e63; background: var(--green-soft); }
       .quiz-opt.wrong { border-color: var(--red); background: var(--red-soft); }
-      .quiz-feedback { margin-top: 16px; border-radius: 12px; padding: 14px 16px; display: none; }
+      .quiz-feedback { margin-top: 16px; border-radius: 8px; padding: 14px 16px; display: none; }
       .quiz-feedback.show { display: block; }
       .quiz-feedback.good { background: var(--green-soft); }
       .quiz-feedback.bad { background: var(--red-soft); }
       .quiz-feedback b { display: block; margin-bottom: 3px; }
       .quiz-feedback p { margin: 0; color: var(--ink-soft); }
       .quiz-actions { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
-      .quiz-score-big { font-family: "Source Serif 4", Georgia, serif; font-size: 3rem; font-weight: 900; color: var(--accent-dark); line-height: 1; }
+      .quiz-score-big { font-family: "Public Sans", sans-serif; font-size: 2.8rem; font-weight: 800; color: var(--accent); line-height: 1; }
 
       /* Paid quiz payment options */
-      .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; align-items: start; }
-      .pay-option { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-      .pay-option h4 { margin: 0; font-family: "Public Sans", sans-serif; font-size: 1rem; font-weight: 800; }
+      .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; align-items: start; }
+      .pay-option { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+      .pay-option h4 { margin: 0; font-family: "Public Sans", sans-serif; font-size: 1rem; font-weight: 800; color: var(--accent-dark); }
       .pay-option p { color: var(--ink-soft); margin: 8px 0 0; font-size: .94rem; }
       .pay-email { font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--ink); font-size: 1.02rem; word-break: break-all; }
       .pay-placeholder { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--ink); font-size: 1rem; background: var(--amber-soft); border: 1px dashed var(--amber); border-radius: 8px; padding: 5px 10px; margin-top: 4px; }
-      .card-form { display: grid; gap: 10px; margin-top: 12px; }
-      .card-form label { font-weight: 700; font-size: .88rem; display: grid; gap: 5px; color: var(--ink); }
-      .card-form input { font: inherit; font-size: .98rem; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
-      .card-form input:focus { outline: none; border-color: var(--accent); }
+      .card-form { display: grid; gap: 12px; margin-top: 12px; }
+      .card-form label { font-weight: 700; font-size: .88rem; display: grid; gap: 6px; color: var(--accent-dark); }
+      .card-form input { font: inherit; font-size: .98rem; font-weight: 500; padding: 11px 13px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); width: 100%; }
+      .card-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27, 126, 194, .15); }
       .card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .card-note { font-size: .85rem; color: var(--ink-soft); margin: 2px 0 0; }
-      .pay-msg { border-radius: 10px; padding: 12px 14px; font-size: .93rem; margin-top: 12px; display: none; }
+      .card-note { font-size: .85rem; color: var(--ink-soft); margin: 2px 0 0; font-weight: 400; }
+      .pay-msg { border-radius: 8px; padding: 12px 14px; font-size: .93rem; margin-top: 12px; display: none; }
       .pay-msg.show { display: block; }
       .pay-msg.ok { background: var(--green-soft); color: var(--ink); }
       .pay-msg.err { background: var(--red-soft); color: var(--ink); }
       @media (max-width: 700px) { .pay-grid { grid-template-columns: 1fr; } }
 
-      /* Auth */
-      .auth-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 30px; margin-top: 26px; max-width: 560px; }
-      .auth-tabs { display: flex; background: var(--bg-soft); border-radius: 12px; padding: 5px; gap: 5px; }
-      .auth-tabs button { flex: 1; font: inherit; font-weight: 800; border: none; background: transparent; color: var(--ink-soft); border-radius: 9px; padding: 9px; cursor: pointer; }
-      .auth-tabs button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-      .auth-form { margin-top: 20px; display: grid; gap: 14px; }
-      .auth-form label { font-weight: 700; font-size: .92rem; display: grid; gap: 6px; }
-      .auth-form input { font: inherit; padding: 11px 14px; border-radius: 10px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); }
-      .auth-form input:focus { outline: none; border-color: var(--accent); }
-      .auth-msg { border-radius: 10px; padding: 12px 14px; font-size: .94rem; display: none; }
+      /* Auth — app-style Sign In / Sign Up screens */
+      .auth-card { background: linear-gradient(#ffffff 72%, #eaf4fb 100%); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg); padding: 30px 28px 34px; margin: 26px auto 0; max-width: 480px; }
+      .auth-logo { display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 22px; }
+      .auth-logo-mark { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 9px; background: var(--accent); color: #fff; font-family: "Source Serif 4", Georgia, serif; font-style: italic; font-weight: 700; font-size: 1.4rem; }
+      .auth-logo-text { font-size: 1.6rem; font-weight: 800; color: var(--accent); letter-spacing: -.01em; }
+      .auth-tabs { display: flex; border-bottom: 1px solid var(--line); gap: 4px; }
+      .auth-tabs button { flex: 1; font: inherit; font-weight: 700; font-size: 1rem; border: none; background: transparent; color: var(--ink-soft); padding: 10px 8px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+      .auth-tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+      .auth-form { margin-top: 22px; display: grid; gap: 15px; }
+      .auth-screen-title { font-size: 1.25rem; font-weight: 800; letter-spacing: .02em; color: var(--ink); margin: 0 0 2px; }
+      .auth-form label { font-weight: 700; font-size: .88rem; display: grid; gap: 6px; color: var(--accent-dark); }
+      .auth-form input { font: inherit; font-size: 1rem; font-weight: 500; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); width: 100%; }
+      .auth-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27, 126, 194, .15); }
+      .remember-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+      .auth-form label.remember { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9rem; color: var(--ink-soft); cursor: pointer; }
+      .auth-form label.remember input { width: 17px; height: 17px; min-height: 0; margin: 0; accent-color: var(--accent); padding: 0; }
+      .remember-row a { font-size: .9rem; font-weight: 600; color: var(--accent); text-decoration: none; }
+      .remember-row a:hover { text-decoration: underline; }
+      .auth-submit { width: 100%; padding: 13px 20px; font-size: 1.05rem; }
+      .auth-switch { text-align: center; margin: 2px 0 0; color: var(--ink-soft); font-size: .95rem; }
+      .auth-switch a { color: var(--accent); font-weight: 700; text-decoration: none; }
+      .auth-switch a:hover { text-decoration: underline; }
+      .auth-msg { border-radius: 8px; padding: 12px 14px; font-size: .94rem; display: none; }
       .auth-msg.show { display: block; }
       .auth-msg.ok { background: var(--green-soft); }
       .auth-msg.err { background: var(--red-soft); }
 
       .notes-btn { margin-top: 12px; font-size: .9rem; padding: 7px 13px; }
-      .level-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 38px; }
-      .level-head h3 { font-size: 1.45rem; font-weight: 900; }
+      .level-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 34px; }
+      .level-head h3 { font-size: 1.35rem; font-weight: 800; color: var(--ink); }
       .level-head .btn { margin-left: auto; }
 
       /* Tutor hint + All Maths library */
-      .tutor-hint { background: var(--amber-soft); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+      .tutor-hint { background: var(--amber-soft); border: 1px solid #ecd9a8; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
       .tutor-hint b { display: block; margin-bottom: 3px; }
       .tutor-hint p { margin: 0; color: var(--ink-soft); }
-      .lib-search { width: 100%; font: inherit; font-size: 1.05rem; padding: 12px 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); margin-top: 20px; }
-      .lib-search:focus { outline: none; border-color: var(--accent); }
-      .lib-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; margin-top: 20px; }
-      .lib-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); transition: box-shadow .22s ease, border-color .22s ease; }
-      .lib-card:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); }
-      .lib-card .lib-tag { display: inline-block; background: var(--accent-soft); color: var(--accent-dark); font-weight: 800; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; }
-      .lib-card h3 { font-size: 1.18rem; margin: 10px 0 6px; }
+      .lib-search { width: 100%; font: inherit; font-size: 1.02rem; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); margin-top: 20px; }
+      .lib-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27, 126, 194, .15); }
+      .lib-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px; margin-top: 20px; }
+      .lib-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); transition: border-color .2s ease; }
+      .lib-card:hover { border-color: var(--accent); }
+      .lib-card .lib-tag { display: inline-block; background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; }
+      .lib-card h3 { font-size: 1.14rem; margin: 10px 0 6px; color: var(--ink); }
       .lib-card p { margin: 6px 0; color: var(--ink-soft); font-size: .95rem; }
-      .lib-card .fx { display: block; margin: 8px 0; padding: 9px 12px; background: var(--bg-soft); border-radius: 9px; font-family: "Source Serif 4", Georgia, serif; font-style: italic; font-size: 1.02rem; overflow-x: auto; }
-      .lib-card .result { background: var(--green-soft); border-radius: 9px; padding: 9px 12px; margin: 8px 0; font-size: .97rem; }
+      .lib-card .fx { display: block; margin: 8px 0; padding: 9px 12px; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px; font-family: "Source Serif 4", Georgia, serif; font-style: italic; font-size: 1.02rem; overflow-x: auto; color: var(--ink); }
+      .lib-card .result { background: var(--green-soft); border-radius: 8px; padding: 9px 12px; margin: 8px 0; font-size: .97rem; }
       .lib-card .result b { font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-dark); display: block; margin-bottom: 1px; }
-      .lib-card .excl { margin: 8px 0; color: var(--ink-soft); font-size: .92rem; background: var(--red-soft); border-radius: 9px; padding: 10px 12px; }
+      .lib-card .excl { margin: 8px 0; color: var(--ink-soft); font-size: .92rem; background: var(--red-soft); border-radius: 8px; padding: 10px 12px; }
       .lib-card .excl b { color: var(--ink); }
       .lib-card .excl ul { margin: 6px 0 0; padding-left: 18px; }
       .lib-card .excl li { margin: 3px 0; }
       .mini-table { width: 100%; border-collapse: collapse; font-size: .93rem; margin: 10px 0; }
       .mini-table th, .mini-table td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
       .mini-table th { font-weight: 800; }
-      .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; margin-top: 14px; }
+      .two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; margin-top: 14px; }
 
       /* FAQ */
-      .faq { margin-top: 24px; display: grid; gap: 12px; }
-      details.faq-item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 20px; }
-      details.faq-item summary { font-weight: 800; cursor: pointer; padding: 13px 0; font-size: 1.02rem; }
+      .faq { margin-top: 22px; display: grid; gap: 10px; }
+      details.faq-item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px 18px; }
+      details.faq-item summary { font-weight: 700; cursor: pointer; padding: 12px 0; font-size: 1rem; color: var(--ink); }
+      details.faq-item summary:hover { color: var(--accent); }
       details.faq-item p { color: var(--ink-soft); margin: 0 0 16px; }
 
-      footer.site { margin-top: 70px; border-top: 1px solid var(--line); background: var(--bg-soft); }
-      .footer-in { padding: 34px 0 40px; display: grid; gap: 8px; }
-      .footer-in .brand { font-size: 1.3rem; }
+      footer.site { margin-top: 64px; border-top: 1px solid var(--line); background: var(--bg-soft); }
+      .footer-in { padding: 32px 0 38px; display: grid; gap: 8px; }
+      .footer-in .brand { font-size: 1.25rem; }
       .footer-in p { color: var(--ink-soft); margin: 0; font-size: .94rem; max-width: 620px; }
       .footer-links { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
       .footer-links a { font-weight: 600; font-size: .92rem; padding: 6px 0; display: inline-block; }
 
-
       /* MCQ bank (12th Maths MCQs Book) */
       .mcq-controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: end; }
-      .mcq-controls label { font-weight: 700; font-size: .92rem; display: grid; gap: 6px; }
-      .mcq-controls select { font: inherit; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); max-width: 100%; }
+      .mcq-controls label { font-weight: 700; font-size: .88rem; display: grid; gap: 6px; color: var(--accent-dark); }
+      .mcq-controls select { font: inherit; font-size: 1rem; font-weight: 500; padding: 11px 13px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); max-width: 100%; }
+      .mcq-controls select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27, 126, 194, .15); }
       .mcq-modes { display: flex; gap: 8px; margin-left: auto; }
       .mcq-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0 16px; }
       .mcq-q { border-top: 1px solid var(--line); padding: 20px 0 8px; margin-top: 20px; }
       .mcq-q:first-child { border-top: none; margin-top: 4px; padding-top: 6px; }
       .mcq-q-text { font-family: "Source Serif 4", Georgia, serif; font-size: 1.14rem; font-weight: 700; margin: 0 0 12px; }
-      .mcq-q-text .qno { color: var(--accent-dark); font-family: "Public Sans", sans-serif; font-size: .9rem; font-weight: 800; margin-right: 7px; }
-      .mcq-q-text .extag { display: inline-block; background: var(--accent-soft); color: var(--accent-dark); font-family: "Public Sans", sans-serif; font-weight: 800; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; }
+      .mcq-q-text .qno { color: var(--accent); font-family: "Public Sans", sans-serif; font-size: .9rem; font-weight: 800; margin-right: 7px; }
+      .mcq-q-text .extag { display: inline-block; background: var(--accent-soft); color: var(--accent-dark); font-family: "Public Sans", sans-serif; font-weight: 700; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; margin-left: 8px; vertical-align: 2px; }
       .mcq-verdict { margin-top: 10px; font-weight: 700; font-size: .94rem; display: none; }
       .mcq-verdict.show { display: block; }
-      .mcq-verdict.good { color: var(--accent-dark); }
+      .mcq-verdict.good { color: #2e7d46; }
       .mcq-verdict.bad { color: var(--red); }
       @media (max-width: 640px) {
         .mcq-modes { margin-left: 0; }
@@ -423,25 +418,70 @@
         .solver-row .btn { width: 100%; }
         .upload-row .btn { width: 100%; }
         .upload-actions .btn { flex: 1 1 45%; }
-        article.lesson, .quiz-card, .auth-card, .solver-card { padding: 22px 18px; }
-        .hero { padding: 34px 20px 32px; border-radius: 22px; }
+        article.lesson, .quiz-card, .solver-card, .finder-card { padding: 20px 16px; }
+        .auth-card { padding: 24px 18px 28px; }
+        .hero { padding: 24px 18px 20px; }
         nav.main { order: 3; margin-left: 0; }
       }
       .paper-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 10px; }
       .paper-chip { background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; font-size: .86rem; padding: 6px 12px; border-radius: 999px; }
       .dl-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
       .dl-row .btn { margin-top: 0; }
-      /* Files — Maths books: expandable chapter rows with exercise PDFs */
-      .file-chapters { display: grid; gap: 10px; margin-top: 18px; }
-      .file-chapter { border: 1px solid var(--line); border-radius: 14px; padding: 10px 16px; background: var(--card); box-shadow: var(--shadow); }
-      .file-chapter-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-      .file-chapter-toggle { font: inherit; font-weight: 800; background: none; border: none; cursor: pointer; color: var(--ink); padding: 6px 0; text-align: left; flex: 1 1 220px; }
-      .file-chapter-toggle .file-caret { color: var(--accent-dark); margin-right: 7px; }
-      .file-chapter-head .btn { margin-top: 0; }
-      .file-exercises { list-style: none; margin: 10px 0 6px; padding: 0; display: grid; gap: 8px; }
-      .file-exercises a { font-weight: 700; color: var(--accent-dark); }
-
       .dl-help { margin-top: 9px; font-size: .88rem; color: var(--ink-soft); max-width: 62ch; }
+
+      /* Courses — LMS course cards + course detail view */
+      .courses-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; margin-top: 22px; }
+      .course-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+      .course-banner { background: #e8f3fa; display: grid; place-items: center; padding: 20px 12px 14px; }
+      .course-banner svg { width: 132px; height: auto; display: block; }
+      .course-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+      .course-body h3 { font-size: 1.3rem; font-weight: 800; color: var(--accent); }
+      .course-meta { margin: 0; color: var(--ink-soft); font-size: .92rem; }
+      .course-open { margin-top: auto; width: 100%; padding: 11px 18px; font-size: 1rem; }
+      .course-detail { margin-top: 22px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; scroll-margin-top: 84px; }
+      .course-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: #fff; }
+      .course-bar h3 { flex: 1; text-align: center; font-size: 1.12rem; font-weight: 800; color: var(--accent); }
+      .course-back { flex: none; width: 38px; height: 38px; min-height: 38px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--accent); cursor: pointer; display: grid; place-items: center; padding: 0; }
+      .course-back:hover { border-color: var(--accent); background: var(--accent-soft); }
+      .course-back svg { width: 20px; height: 20px; }
+      .course-bar-spacer { flex: none; width: 38px; }
+      .course-detail .course-banner { padding: 26px 12px 18px; }
+      .course-detail .course-banner svg { width: 168px; }
+      .course-main { padding: 20px 22px 24px; }
+      .course-title { font-size: 1.45rem; font-weight: 800; color: var(--accent); }
+      .course-info { display: flex; flex-wrap: wrap; gap: 14px 30px; margin-top: 14px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .course-info div { min-width: 104px; }
+      .course-info span { display: block; font-size: .8rem; font-weight: 600; color: var(--ink-soft); }
+      .course-info b { display: block; font-size: .98rem; color: var(--ink); margin-top: 1px; }
+      .course-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-top: 18px; overflow-x: auto; }
+      .course-tab { font: inherit; font-weight: 700; font-size: .98rem; border: none; background: transparent; color: var(--ink-soft); padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+      .course-tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+      .chapter-list { display: grid; gap: 10px; margin-top: 18px; }
+      .chapter-row { border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+      .chapter-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px 6px 16px; }
+      .chapter-head-text { flex: 1; min-width: 0; text-align: left; font: inherit; font-weight: 700; font-size: 1rem; color: var(--ink); background: none; border: none; cursor: pointer; padding: 8px 0; }
+      .chapter-head-text small { display: block; font-weight: 600; font-size: .82rem; color: var(--ink-soft); margin-top: 1px; }
+      .chapter-toggle { flex: none; width: 34px; height: 34px; min-height: 34px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 1.25rem; font-weight: 700; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0 0 2px; }
+      .chapter-toggle:hover { background: var(--accent-dark); }
+      .entry-list { list-style: none; margin: 0; padding: 4px 16px 14px; display: grid; gap: 4px; }
+      .entry-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+      .entry-row:first-child { border-top: none; }
+      .entry-icon { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+      .entry-icon svg { width: 18px; height: 18px; }
+      .entry-text { flex: 1; min-width: 0; }
+      .entry-text b { display: block; font-size: .97rem; color: var(--ink); }
+      .entry-text small { display: block; color: var(--ink-soft); font-size: .83rem; }
+      .open-pill { flex: none; background: var(--accent); color: #fff; font-weight: 700; font-size: .88rem; text-decoration: none; padding: 7px 18px; border-radius: 999px; min-height: 2.25rem; display: inline-flex; align-items: center; }
+      .open-pill:hover { background: var(--accent-dark); }
+      .entry-empty { padding: 10px 0 4px; color: var(--ink-soft); font-size: .93rem; border-top: 1px solid var(--line); }
+      .entry-empty:first-child { border-top: none; }
+      @media (max-width: 640px) {
+        .course-main { padding: 16px 14px 20px; }
+        .course-info { gap: 12px 20px; }
+        .entry-list { padding: 4px 12px 12px; }
+        .chapter-head { padding-left: 12px; }
+      }
+
       /* The PDF reader is a dedicated FULL-PAGE view, not a small panel:
          whenever a PDF opens, it takes over the whole screen on its own
          reader page (inside this site — never a raw browser tab, which
@@ -451,7 +491,7 @@
       body.pdf-open { overflow: hidden; }
       .pdf-panel { background: var(--card); color: var(--ink); width: 100%; height: 100dvh; max-height: 100dvh; display: flex; flex-direction: column; padding: 14px 16px 18px; overflow-y: auto; }
       .pdf-reader-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-      .pdf-reader-bar h3 { flex: 1; min-width: 180px; }
+      .pdf-reader-bar h3 { flex: 1; min-width: 180px; color: var(--accent); }
       .pdf-reader-bar .btn { margin-top: 0; }
       .pdf-panel h3 { margin: 0 0 6px; font-size: 1.15rem; }
       .pdf-panel p { margin: 0 0 12px; color: var(--ink-soft); font-size: .93rem; }
@@ -462,7 +502,7 @@
          renders at the page's full natural height (flex:none below) and the
          viewer scrolls through the pages — the strip in Sunny's screenshot
          (15 Nov) came from this box being flex-shrunk to a sliver. */
-      .pdf-viewer { flex: 1 1 auto; width: 100%; min-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #3c4147; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+      .pdf-viewer { flex: 1 1 auto; width: 100%; min-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #46525e; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
       /* Pages must NEVER shrink: this viewer is a height-capped column flex
          box, so without flex:none the browser squashes every canvas to fit
          the box height instead of scrolling — pages collapsed into unreadable
@@ -471,7 +511,7 @@
       .pdf-viewer > * { flex-shrink: 0; }
       .pdf-viewer canvas { flex: none; width: 100%; max-width: 100%; height: auto; background: #fff; border-radius: 3px; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
       .pdf-viewer-status { color: #e8eaed; font-size: .92rem; margin: 6px 0; text-align: center; }
-      .pdf-panel pre { display: none; width: 100%; max-height: 52vh; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-size: .85rem; white-space: pre-wrap; margin: 0; background: var(--bg); color: var(--ink); }
+      .pdf-panel pre { display: none; width: 100%; max-height: 52vh; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-size: .85rem; white-space: pre-wrap; margin: 0; background: var(--bg-soft); color: var(--ink); }
       .pdf-panel-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
       .pdf-panel-actions .btn { margin-top: 0; }
       /* (The reader is always full-page now — there is no small-panel or
@@ -482,17 +522,16 @@
       .pdf-pager .btn[disabled] { opacity: .45; }
       .pdf-pager span { font-size: .9rem; color: var(--ink-soft); }
       .pdf-pager .pdf-goto { display: inline-flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--ink-soft); }
-      .pdf-pager .pdf-goto input { width: 74px; font: inherit; font-size: .92rem; padding: 7px 9px; border-radius: 9px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); }
-      .pdf-page-label { color: #cfd4da; font-size: .8rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin: 4px 0 -4px; text-align: center; }
-      .pdf-nav-btn { font: inherit; font-weight: 700; cursor: pointer; border-radius: 10px; border: 1px solid #6b7280; background: #2c313a; color: #fff; padding: 10px 18px; width: 100%; }
-      .pdf-nav-btn:hover { background: #3a4048; }
+      .pdf-pager .pdf-goto input { width: 74px; font: inherit; font-size: .92rem; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+      .pdf-page-label { color: #cfd9e2; font-size: .8rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin: 4px 0 -4px; text-align: center; }
+      .pdf-nav-btn { font: inherit; font-weight: 700; cursor: pointer; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 10px 18px; width: 100%; }
+      .pdf-nav-btn:hover { background: var(--accent-dark); }
       .pdf-dl-status { margin: 10px 0 0; font-size: .9rem; color: var(--ink-soft); }
       .pdf-dl-status:empty { display: none; }
       @media (prefers-reduced-motion: reduce) {
         html { scroll-behavior: auto; }
         .progress i { transition: none; }
-        .topic-card, .lib-card, .btn, nav.main a { transition: none; }
-        .topic-card:hover { transform: none; }
+        .topic-card, .lib-card, .btn, nav.main a, .dash-card { transition: none; }
       }
     </style>
   </head>
@@ -622,6 +661,60 @@
             </div>
           </form>
           <div class="finder-out" id="finderOut" aria-live="polite"></div>
+        </section>
+
+        <section class="block" aria-labelledby="dash-heading">
+          <div class="sec-head">
+            <h2 id="dash-heading">My Dashboard</h2>
+            <p>Everything on MathsGuru, organised like your course app — pick an area to open it.</p>
+          </div>
+          <div class="dash-grid">
+            <a class="dash-card" href="#books">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg></span>
+              <span class="dash-text"><b>My Courses</b><small>Math 9, Math 10, Math 11 &amp; Math 12 books</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="dash-card" href="#solver">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8.5 6.5h7"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></svg></span>
+              <span class="dash-text"><b>Solver</b><small>Ask a question — solved step by step, with a graph</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="dash-card" href="#finder">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg></span>
+              <span class="dash-text"><b>Find a Solution</b><small>Jump to a solved question by book, exercise &amp; question</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="dash-card" href="#quiz">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>
+              <span class="dash-text"><b>Quizzes</b><small>Test yourself at every level, with instant feedback</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="dash-card" href="#mcq-book">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 6h12M8.5 12h12M8.5 18h12"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span>
+              <span class="dash-text"><b>MCQs Book</b><small>12th Maths — 766 MCQs with the book's answer key</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="dash-card" href="#mdcat">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></span>
+              <span class="dash-text"><b>MDCAT</b><small>Logical reasoning practice with answers &amp; explanations</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="dash-card" href="#ugc-net">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/><path d="M22 9v5"/></svg></span>
+              <span class="dash-text"><b>UGC NET</b><small>Paper-I — 27 solved papers, about 6,000 MCQs</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="dash-card" href="#smart-syllabus">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+              <span class="dash-text"><b>Smart Syllabus</b><small>PECTAA Grade 12 ALP scope, pairing scheme &amp; model paper</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="dash-card" href="#lessons">
+              <span class="dash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.2l6 3.8-6 3.8z" fill="currentColor" stroke="none"/></svg></span>
+              <span class="dash-text"><b>Lessons</b><small>Worked lessons — Exercise 11.1, eˣ, calculus &amp; more</small></span>
+              <span class="dash-arrow" aria-hidden="true">›</span>
+            </a>
+          </div>
         </section>
 
         <section class="block" aria-labelledby="topics-heading">
@@ -766,7 +859,7 @@
                 <svg viewBox="0 0 420 260" width="420" height="260" role="img" aria-label="Graph of y equals e to the x, crossing the y-axis at 1 and rising steeply to the right">
                   <line x1="30" y1="210" x2="400" y2="210" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
                   <line x1="150" y1="15" x2="150" y2="245" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
-                  <path d="M 34 207 C 110 205, 138 200, 150 190 C 168 174, 178 130, 196 96 C 214 62, 232 34, 246 16" fill="none" stroke="#0e7a5f" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M 34 207 C 110 205, 138 200, 150 190 C 168 174, 178 130, 196 96 C 214 62, 232 34, 246 16" fill="none" stroke="#1b7ec2" stroke-width="3" stroke-linecap="round"/>
                   <circle cx="150" cy="190" r="4.5" fill="#d98e1c"/>
                   <text x="158" y="184" font-size="13" fill="currentColor">(0, 1)</text>
                   <text x="252" y="30" font-size="15" font-style="italic" fill="currentColor">y = eˣ</text>
@@ -1101,8 +1194,8 @@
             <p>The Punjab (PECTAA / Punjab Textbook Board) maths books, class by class. For the Class 9 and Class 10 books, MathsGuru's own chapter notes — key ideas, formulas and a solved example for each chapter — are downloadable as PDF for every chapter, and as one combined PDF for each whole book; the complete Class 10 PECTAA textbook (248 pages) is also here in full. In the <b>Maths</b> area below, the Math 11 and Math 12 books are given chapter by chapter: read a whole chapter as one PDF, or open any single exercise as its own PDF.</p>
           </div>
           <div id="bookList"></div>
-          <h3 style="font-size:1.45rem;font-weight:900;margin:38px 0 0;">Maths</h3>
-          <p style="color:var(--ink-soft);margin:8px 0 0;">The two FSc maths books, file by file. Open a book&rsquo;s chapter to read the whole chapter as one PDF, or pick a single exercise &mdash; each exercise is its own PDF.</p>
+          <h3 style="font-size:1.45rem;font-weight:800;margin:38px 0 0;color:var(--accent);">My Courses — Maths</h3>
+          <p style="color:var(--ink-soft);margin:8px 0 0;">Your four maths courses, book by book. Open a course, then pick a chapter to read the whole chapter as one PDF, open a single exercise, or read its worked solutions &mdash; each file is its own PDF.</p>
           <div id="fileBookList"></div>
           <p style="color:var(--ink-soft);margin:18px 0 0;"><b>Note:</b> every chapter and exercise PDF opens in a new tab. If a PDF shows blank inside WhatsApp, open this page in Chrome (&#8943; menu &rarr; &ldquo;Open in browser&rdquo;) and tap the link there.</p>
         </section>
@@ -1590,34 +1683,43 @@
             <p>Sign up free to keep your maths practice in one place. Already have an account? Log in below.</p>
           </div>
           <div class="auth-card">
+            <div class="auth-logo" aria-hidden="true"><span class="auth-logo-mark">∑</span><span class="auth-logo-text">MathsGuru</span></div>
             <div class="auth-tabs" role="tablist" aria-label="Account">
               <button type="button" role="tab" id="tabSignup" aria-selected="true">Sign Up</button>
-              <button type="button" role="tab" id="tabLogin" aria-selected="false">Log In</button>
+              <button type="button" role="tab" id="tabLogin" aria-selected="false">Sign In</button>
             </div>
 
             <form class="auth-form" id="signupForm" novalidate>
-              <label>Full name
+              <h3 class="auth-screen-title">SIGN UP</h3>
+              <label>Name
                 <input type="text" id="suName" autocomplete="name" placeholder="e.g. Ali Khan" />
               </label>
-              <label>Email address
+              <label>Email / Username
                 <input type="email" id="suEmail" autocomplete="email" placeholder="you@example.com" />
               </label>
               <label>Password
                 <input type="password" id="suPassword" autocomplete="new-password" placeholder="At least 6 characters" />
               </label>
               <div class="auth-msg" id="signupMsg" aria-live="polite"></div>
-              <button class="btn primary large" type="submit">Create account</button>
+              <button class="btn primary auth-submit" type="submit">Sign Up</button>
+              <p class="auth-switch">Already have an account? <a href="#account" id="toLoginLink">Sign In</a></p>
             </form>
 
             <form class="auth-form" id="loginForm" hidden novalidate>
-              <label>Email address
+              <h3 class="auth-screen-title">SIGN IN</h3>
+              <label>Username
                 <input type="email" id="liEmail" autocomplete="email" placeholder="you@example.com" />
               </label>
               <label>Password
                 <input type="password" id="liPassword" autocomplete="current-password" placeholder="Your password" />
               </label>
+              <div class="remember-row">
+                <label class="remember"><input type="checkbox" id="rememberMe" /> Remember Me</label>
+                <a href="#account" id="forgotLink">Forgot Password?</a>
+              </div>
               <div class="auth-msg" id="loginMsg" aria-live="polite"></div>
-              <button class="btn primary large" type="submit">Log in</button>
+              <button class="btn primary auth-submit" type="submit">Sign In</button>
+              <p class="auth-switch">Don&rsquo;t have an account? <a href="#account" id="toSignupLink">Sign Up</a></p>
             </form>
           </div>
         </section>
@@ -2820,7 +2922,7 @@
           d += (pen ? " L " : " M ") + px.toFixed(1) + " " + py.toFixed(1);
           pen = true; prevPy = py;
         }
-        if (d) parts.push('<path d="' + d + '" fill="none" stroke="#0e7a5f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>');
+        if (d) parts.push('<path d="' + d + '" fill="none" stroke="#1b7ec2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>');
         /* marked points: roots, y-intercept, vertex — points landing on
            the same spot (e.g. all three at the origin for y = x²) merge */
         var marks = computeMarks(spec);
@@ -3686,6 +3788,14 @@
         $("loginLink").style.display = "";
         $("signupLink").style.display = "";
       });
+      /* Sign In / Sign Up screen switch links + Forgot Password note
+         (presentation only — the account behaviour above is unchanged). */
+      $("toLoginLink").addEventListener("click", function (ev) { ev.preventDefault(); setTab("login"); });
+      $("toSignupLink").addEventListener("click", function (ev) { ev.preventDefault(); setTab("signup"); });
+      $("forgotLink").addEventListener("click", function (ev) {
+        ev.preventDefault();
+        showMsg("loginMsg", "MathsGuru accounts work in this browser session only, so there is no password-reset email. If you created an account in this session, sign in with the same email and password — otherwise use the Sign Up tab to create one.", false);
+      });
 
       /* ---------- PDF notes: data ---------- */
       var NOTES = {
@@ -3989,83 +4099,203 @@
       (function renderFileBooks() {
         var host = $("fileBookList");
         if (!host) return;
-        FILE_BOOKS.forEach(function (book) {
-          var totalEx = 0;
-          book.chapters.forEach(function (ch) { totalEx += ch.exercises.length; });
-          var art = document.createElement("article");
-          art.className = "lesson";
-          var tag = document.createElement("span"); tag.className = "lesson-tag"; tag.textContent = "PECTAA Textbook";
-          var h = document.createElement("h3"); h.textContent = book.title;
-          var sub = document.createElement("p"); sub.className = "lesson-sub";
-          sub.textContent = totalEx > 0
-            ? book.chapters.length + " chapters · " + totalEx + " exercises. Tap a chapter to see its exercises; the chapter and exercise PDFs each open in a new tab."
-            : book.chapters.length + " chapters. Tap a chapter to see its solutions; the solution PDFs each open in a new tab.";
-          art.appendChild(tag); art.appendChild(h); art.appendChild(sub);
-          var wrap = document.createElement("div"); wrap.className = "file-chapters";
+
+        /* Flat books illustration in the ELEARN style, drawn as inline SVG. */
+        var BOOKS_SVG = '<svg viewBox="0 0 150 96" role="img" aria-label="A set of maths books">'
+          + '<rect x="18" y="26" width="40" height="56" rx="4" fill="#57a8dc"/>'
+          + '<rect x="24" y="26" width="5" height="56" fill="#2f8fc9"/>'
+          + '<rect x="34" y="36" width="18" height="4" rx="2" fill="#ffffff" opacity=".85"/>'
+          + '<rect x="34" y="44" width="13" height="4" rx="2" fill="#ffffff" opacity=".6"/>'
+          + '<rect x="58" y="14" width="44" height="68" rx="4" fill="#1b7ec2"/>'
+          + '<rect x="65" y="14" width="5" height="68" fill="#12639c"/>'
+          + '<text x="86" y="57" font-family="Georgia, serif" font-style="italic" font-size="24" fill="#ffffff" text-anchor="middle">∑</text>'
+          + '<g transform="rotate(14 118 52)"><rect x="102" y="22" width="34" height="58" rx="4" fill="#bcdcf2"/><rect x="107" y="22" width="5" height="58" fill="#8fc3e8"/><rect x="117" y="32" width="13" height="4" rx="2" fill="#ffffff" opacity=".9"/></g>'
+          + '<circle cx="128" cy="16" r="4" fill="#1b7ec2" opacity=".35"/>'
+          + '<circle cx="14" cy="14" r="3" fill="#1b7ec2" opacity=".3"/>'
+          + '</svg>';
+        var DOC_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/></svg>';
+
+        function solOf(ch) { return FILE_SOLUTIONS[ch.solKey || ch.pdf]; }
+        function exCount(book) { var n = 0; book.chapters.forEach(function (ch) { n += ch.exercises.length; }); return n; }
+        function solCount(book) {
+          var n = 0;
           book.chapters.forEach(function (ch) {
-            var row = document.createElement("div"); row.className = "file-chapter";
-            var head = document.createElement("div"); head.className = "file-chapter-head";
-            var sol = FILE_SOLUTIONS[ch.solKey || ch.pdf];
-            var itemCount = ch.exercises.length, itemWord = itemCount === 1 ? " exercise" : " exercises";
-            if (!itemCount && sol) {
-              itemCount = sol.exercises.length + (sol.review ? 1 : 0) + (sol.examples ? 1 : 0) + (sol.extras ? sol.extras.length : 0);
-              itemWord = itemCount === 1 ? " solution" : " solutions";
-            }
-            var toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "file-chapter-toggle";
-            toggle.setAttribute("aria-expanded", "false");
-            toggle.innerHTML = '<span class="file-caret" aria-hidden="true">\u25B8</span>';
-            toggle.appendChild(document.createTextNode("Chapter " + ch.n + ": " + ch.title + " (" + itemCount + itemWord + ")"));
-            head.appendChild(toggle);
-            if (ch.pdf) {
-              var chLink = document.createElement("a"); chLink.className = "btn"; chLink.href = "assets/" + ch.pdf;
-              chLink.target = "_blank"; chLink.rel = "noopener noreferrer"; chLink.textContent = "Read full chapter (PDF)";
-              head.appendChild(chLink);
-            }
-            var ul = document.createElement("ul"); ul.className = "file-exercises"; ul.hidden = true;
-            ch.exercises.forEach(function (ex) {
-              var li = document.createElement("li");
-              var a = document.createElement("a"); a.href = "assets/exercises/" + ex[1];
-              a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = ex[0] + " (PDF)";
-              li.appendChild(a); ul.appendChild(li);
-            });
-            if (sol) {
-              sol.exercises.forEach(function (sx) {
-                var sli = document.createElement("li");
-                var sa = document.createElement("a"); sa.href = "assets/solutions/" + sx[1];
-                sa.target = "_blank"; sa.rel = "noopener noreferrer"; sa.textContent = sx[0] + " \u2014 Solutions (PDF)";
-                sli.appendChild(sa); ul.appendChild(sli);
-              });
-              if (sol.review) {
-                var rli = document.createElement("li");
-                var ra = document.createElement("a"); ra.href = "assets/solutions/" + sol.review;
-                ra.target = "_blank"; ra.rel = "noopener noreferrer"; ra.textContent = "Review \u2014 Solutions (PDF)";
-                rli.appendChild(ra); ul.appendChild(rli);
-              }
-              var eli = document.createElement("li");
-              var ea = document.createElement("a"); ea.href = "assets/solutions/" + sol.examples;
-              ea.target = "_blank"; ea.rel = "noopener noreferrer"; ea.textContent = "Worked Examples \u2014 Solutions (PDF)";
-              eli.appendChild(ea); ul.appendChild(eli);
-              if (sol.extras) {
-                sol.extras.forEach(function (xt) {
-                  var xli = document.createElement("li");
-                  var xa = document.createElement("a"); xa.href = "assets/solutions/" + xt[1];
-                  xa.target = "_blank"; xa.rel = "noopener noreferrer"; xa.textContent = xt[0] + " \u2014 Solutions (PDF)";
-                  xli.appendChild(xa); ul.appendChild(xli);
-                });
-              }
-            }
-            toggle.addEventListener("click", function () {
-              var open = ul.hidden;
-              ul.hidden = !open;
-              toggle.setAttribute("aria-expanded", open ? "true" : "false");
-              toggle.querySelector(".file-caret").textContent = open ? "\u25BE" : "\u25B8";
-            });
-            row.appendChild(head); row.appendChild(ul);
-            wrap.appendChild(row);
+            var s = solOf(ch);
+            if (s) n += s.exercises.length + (s.review ? 1 : 0) + (s.examples ? 1 : 0) + (s.extras ? s.extras.length : 0);
           });
-          art.appendChild(wrap);
-          host.appendChild(art);
+          return n;
+        }
+        function courseName(book) { return book.title.split(" — ")[0]; }
+        function courseSub(book) {
+          var parts = book.title.split(" — ");
+          return parts.length > 1 ? parts.slice(1).join(" — ").replace(/: \d+ (units|chapters)$/, "") : "";
+        }
+
+        /* One LMS entry row: icon, title, subtitle, blue Open pill (the PDF link). */
+        function entryRow(kind, label, sub, href) {
+          var li = document.createElement("li");
+          li.className = "entry-row"; li.setAttribute("data-kind", kind);
+          var icon = document.createElement("span"); icon.className = "entry-icon"; icon.setAttribute("aria-hidden", "true"); icon.innerHTML = DOC_ICON;
+          var text = document.createElement("span"); text.className = "entry-text";
+          var b = document.createElement("b"); b.textContent = label;
+          var small = document.createElement("small"); small.textContent = sub;
+          text.appendChild(b); text.appendChild(small);
+          var a = document.createElement("a"); a.className = "open-pill"; a.href = href;
+          a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Open";
+          li.appendChild(icon); li.appendChild(text); li.appendChild(a);
+          return li;
+        }
+
+        /* One expandable chapter row (like the app's Levels), holding every
+           chapter / exercise / solution link the chapter has. */
+        function chapterRow(ch) {
+          var sol = solOf(ch);
+          var row = document.createElement("div"); row.className = "chapter-row";
+          var head = document.createElement("div"); head.className = "chapter-head";
+          var titleBtn = document.createElement("button"); titleBtn.type = "button"; titleBtn.className = "chapter-head-text";
+          titleBtn.setAttribute("aria-expanded", "false");
+          titleBtn.appendChild(document.createTextNode("Chapter " + ch.n + ": " + ch.title));
+          var counts = [];
+          if (ch.pdf) counts.push("Chapter PDF");
+          if (ch.exercises.length) counts.push(ch.exercises.length + (ch.exercises.length === 1 ? " exercise" : " exercises"));
+          if (sol) {
+            var sc = sol.exercises.length + (sol.review ? 1 : 0) + (sol.examples ? 1 : 0) + (sol.extras ? sol.extras.length : 0);
+            counts.push(sc + (sc === 1 ? " solution" : " solutions"));
+          }
+          if (counts.length) {
+            var small = document.createElement("small"); small.textContent = counts.join(" · ");
+            titleBtn.appendChild(small);
+          }
+          var toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "chapter-toggle";
+          toggle.textContent = "+"; toggle.setAttribute("aria-expanded", "false");
+          toggle.setAttribute("aria-label", "Show or hide the files in Chapter " + ch.n);
+          head.appendChild(titleBtn); head.appendChild(toggle);
+
+          var body = document.createElement("ul"); body.className = "entry-list"; body.hidden = true;
+          if (ch.pdf) body.appendChild(entryRow("chapter", "Chapter " + ch.n + " — " + ch.title + " (full chapter)", "Chapter PDF · PECTAA book", "assets/" + ch.pdf));
+          ch.exercises.forEach(function (ex) {
+            body.appendChild(entryRow("exercise", ex[0], "Exercise PDF · PECTAA book", "assets/exercises/" + ex[1]));
+          });
+          if (sol) {
+            sol.exercises.forEach(function (sx) {
+              body.appendChild(entryRow("solution", sx[0] + " — Solutions", "Worked solutions PDF", "assets/solutions/" + sx[1]));
+            });
+            if (sol.review) body.appendChild(entryRow("solution", "Review — Solutions", "Worked solutions PDF", "assets/solutions/" + sol.review));
+            if (sol.examples) body.appendChild(entryRow("solution", "Worked Examples — Solutions", "Worked solutions PDF", "assets/solutions/" + sol.examples));
+            if (sol.extras) sol.extras.forEach(function (xt) {
+              body.appendChild(entryRow("solution", xt[0] + " — Solutions", "Worked solutions PDF", "assets/solutions/" + xt[1]));
+            });
+          }
+          var empty = document.createElement("li"); empty.className = "entry-empty"; empty.hidden = true;
+          body.appendChild(empty);
+
+          var isOpen = false;
+          function flip() {
+            isOpen = !isOpen;
+            body.hidden = !isOpen;
+            titleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            toggle.textContent = isOpen ? "−" : "+";
+          }
+          titleBtn.addEventListener("click", flip);
+          toggle.addEventListener("click", flip);
+          row.appendChild(head); row.appendChild(body);
+          return row;
+        }
+
+        /* Tabs switch which kind of link each chapter shows. */
+        function applyTab(detail, kind) {
+          var rows = detail.querySelectorAll(".chapter-row");
+          for (var i = 0; i < rows.length; i++) {
+            var list = rows[i].querySelector(".entry-list");
+            var items = list.querySelectorAll(".entry-row");
+            var shown = 0;
+            for (var k = 0; k < items.length; k++) {
+              var match = items[k].getAttribute("data-kind") === kind;
+              items[k].hidden = !match;
+              if (match) shown++;
+            }
+            var empty = list.querySelector(".entry-empty");
+            if (empty) {
+              empty.hidden = shown > 0;
+              if (!shown) empty.textContent = kind === "chapter"
+                ? "This book has no chapter PDFs — its chapters are covered in the Solutions tab."
+                : kind === "exercise"
+                  ? "No exercise PDFs for this chapter — see the Solutions tab."
+                  : "No solution PDFs for this chapter yet.";
+            }
+          }
+        }
+
+        var grid = document.createElement("div"); grid.className = "courses-grid";
+        var detail = document.createElement("div"); detail.className = "course-detail"; detail.hidden = true;
+
+        function openCourse(book) {
+          detail.innerHTML = "";
+          var bar = document.createElement("div"); bar.className = "course-bar";
+          var back = document.createElement("button"); back.type = "button"; back.className = "course-back";
+          back.setAttribute("aria-label", "Back to courses");
+          back.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+          var barTitle = document.createElement("h3"); barTitle.textContent = "Course Details";
+          var spacer = document.createElement("span"); spacer.className = "course-bar-spacer"; spacer.setAttribute("aria-hidden", "true");
+          bar.appendChild(back); bar.appendChild(barTitle); bar.appendChild(spacer);
+          back.addEventListener("click", function () {
+            detail.hidden = true; grid.hidden = false;
+            grid.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+
+          var banner = document.createElement("div"); banner.className = "course-banner"; banner.innerHTML = BOOKS_SVG;
+
+          var main = document.createElement("div"); main.className = "course-main";
+          var title = document.createElement("h3"); title.className = "course-title"; title.textContent = book.title;
+          var info = document.createElement("div"); info.className = "course-info";
+          [["Board", "PECTAA · All Punjab Board"], ["Chapters", String(book.chapters.length)], ["Exercises", String(exCount(book))], ["Solutions", String(solCount(book))]].forEach(function (pair) {
+            var d = document.createElement("div");
+            var s = document.createElement("span"); s.textContent = pair[0];
+            var b = document.createElement("b"); b.textContent = pair[1];
+            d.appendChild(s); d.appendChild(b); info.appendChild(d);
+          });
+
+          var tabs = document.createElement("div"); tabs.className = "course-tabs";
+          tabs.setAttribute("role", "tablist"); tabs.setAttribute("aria-label", "Course content");
+          var listWrap = document.createElement("div"); listWrap.className = "chapter-list";
+          book.chapters.forEach(function (ch) { listWrap.appendChild(chapterRow(ch)); });
+          [["chapter", "Chapters"], ["exercise", "Exercises"], ["solution", "Solutions"]].forEach(function (t, idx) {
+            var btn = document.createElement("button"); btn.type = "button"; btn.className = "course-tab"; btn.textContent = t[1];
+            btn.setAttribute("role", "tab"); btn.setAttribute("aria-selected", idx === 0 ? "true" : "false");
+            btn.addEventListener("click", function () {
+              var all = tabs.querySelectorAll(".course-tab");
+              for (var i = 0; i < all.length; i++) all[i].setAttribute("aria-selected", "false");
+              btn.setAttribute("aria-selected", "true");
+              applyTab(detail, t[0]);
+            });
+            tabs.appendChild(btn);
+          });
+
+          main.appendChild(title); main.appendChild(info); main.appendChild(tabs); main.appendChild(listWrap);
+          detail.appendChild(bar); detail.appendChild(banner); detail.appendChild(main);
+          applyTab(detail, "chapter");
+          grid.hidden = true; detail.hidden = false;
+          detail.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        FILE_BOOKS.forEach(function (book) {
+          var card = document.createElement("article"); card.className = "course-card";
+          var banner = document.createElement("div"); banner.className = "course-banner"; banner.innerHTML = BOOKS_SVG;
+          var bodyEl = document.createElement("div"); bodyEl.className = "course-body";
+          var h = document.createElement("h3"); h.textContent = courseName(book);
+          var meta = document.createElement("p"); meta.className = "course-meta";
+          var ex = exCount(book), so = solCount(book);
+          meta.textContent = courseSub(book) + " · " + book.chapters.length + " chapters"
+            + (ex ? " · " + ex + " exercises" : " · solutions only")
+            + (so ? " · " + so + " solution PDFs" : "");
+          var open = document.createElement("button"); open.type = "button"; open.className = "btn primary course-open"; open.textContent = "Open Course";
+          open.addEventListener("click", function () { openCourse(book); });
+          bodyEl.appendChild(h); bodyEl.appendChild(meta); bodyEl.appendChild(open);
+          card.appendChild(banner); card.appendChild(bodyEl);
+          grid.appendChild(card);
         });
+        host.appendChild(grid); host.appendChild(detail);
       })();
 
       /* ---------- PDF generation (built in the browser, no server) ---------- */
