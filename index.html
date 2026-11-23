@@ -662,6 +662,13 @@
             <button class="chip" type="button" data-q="domain of sqrt(x) + ln(x)">domain of √x + ln x</button>
             <button class="chip" type="button" data-q="solve 3x + 7 = 22">solve 3x + 7 = 22</button>
             <button class="chip" type="button" data-q="factor x^2 - x - 12">factor x² − x − 12</button>
+            <button class="chip" type="button" data-q="what is 15% of 240">15% of 240</button>
+            <button class="chip" type="button" data-q="hcf of 24 and 36">HCF of 24 and 36</button>
+            <button class="chip" type="button" data-q="area of a circle with radius 7">area of a circle, radius 7</button>
+            <button class="chip" type="button" data-q="mean of 4, 7, 9, 12">mean of 4, 7, 9, 12</button>
+            <button class="chip" type="button" data-q="solve 2x + 3y = 12 and x - y = 1">simultaneous equations</button>
+            <button class="chip" type="button" data-q="determinant of [[1, 2], [3, 4]]">determinant of a matrix</button>
+            <button class="chip" type="button" data-q="solve 2x + 3 > 7">solve 2x + 3 &gt; 7</button>
             <button class="chip" type="button" data-q="draw the graph of y = e^x">draw the graph of y = eˣ</button>
           </div>
           <div class="solver-out" id="solverOut" aria-live="polite">
@@ -1912,7 +1919,12 @@
         return node;
       };
       Parser.prototype.parseFactor = function () {
-        var base = this.parseUnary();
+        /* A leading minus binds LOOSER than ^ : -x^2 means -(x^2), never
+           (-x)^2. (Fixed in v35 — the old parseUnary-first order read
+           -x^2 + 4x + 1 as x^2 + 4x + 1 and solved the wrong equation.) */
+        if (this.peek() && this.peek().t === "-") { this.next(); return { k: "neg", a: this.parseFactor() }; }
+        if (this.peek() && this.peek().t === "+") { this.next(); return this.parseFactor(); }
+        var base = this.parseAtom();
         if (this.peek() && this.peek().t === "^") {
           this.next();
           return { k: "bin", op: "^", l: base, r: this.parseFactor() };
@@ -2454,6 +2466,1690 @@
         ]};
       }
 
+      /* ---------- extended solver (v35): common school/college types ----------
+         solveExtended(s, low, v) returns a result object or null. Every
+         handler VERIFIES its answer internally (plug-back / numeric check)
+         before returning it; if verification fails it returns null so no
+         unverified answer is ever shown. Handlers run BEFORE the core
+         dispatcher and only claim question shapes the core cannot do (or
+         would do wrong, e.g. trig in degrees). */
+      function Xgcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a || 1; }
+      function Xlcm(a, b) { return a / Xgcd(a, b) * b; }
+      function XisInt(n) { return Math.abs(n - Math.round(n)) < 1e-9; }
+      function Xnum(str) {
+        if (str === null || str === undefined) return null;
+        str = String(str).trim();
+        var m = str.match(/^(-?\d+)\s+(\d+)\/(\d+)$/);
+        if (m) { var sgn = (+m[1]) < 0 ? -1 : 1; return (+m[1]) + sgn * (+m[2]) / (+m[3]); }
+        m = str.match(/^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
+        if (m) return (+m[1]) / (+m[2]);
+        if (/^-?\d+(?:\.\d+)?$/.test(str)) return parseFloat(str);
+        return null;
+      }
+      function Xfrac(n, d) { /* reduced {n, d} with d > 0, integers */
+        if (d < 0) { n = -n; d = -d; }
+        var g = Xgcd(n, d); return { n: n / g, d: d / g };
+      }
+      function XfracStr(f) {
+        if (f.d === 1) return String(f.n);
+        var an = Math.abs(f.n);
+        if (an > f.d) { var w = Math.floor(an / f.d), r = an % f.d; return (f.n < 0 ? "−" : "") + w + " " + r + "/" + f.d; }
+        return (f.n < 0 ? "−" : "") + an + "/" + f.d;
+      }
+      function XfracPlain(f) { return f.d === 1 ? String(f.n) : f.n + "/" + f.d; }
+      function XtoFrac(x) { /* decimal -> exact fraction when it is a simple one */
+        if (XisInt(x)) return { n: Math.round(x), d: 1 };
+        for (var d = 2; d <= 1000; d++) { var n = x * d; if (Math.abs(n - Math.round(n)) < 1e-9) return Xfrac(Math.round(n), d); }
+        return null;
+      }
+      function Xlist(str) {
+        if (!str) return null;
+        var parts = String(str).split(/,|\band\b/).map(function (p) { return p.trim(); }).filter(function (p) { return p !== ""; });
+        var out = [];
+        for (var i = 0; i < parts.length; i++) { var n = Xnum(parts[i]); if (n === null) return null; out.push(n); }
+        return out.length ? out : null;
+      }
+      function Xmk(method, why, answer, steps) { return { method: method, methodWhy: why, answer: answer, steps: steps }; }
+      function Xst(h, p, fx) { return { h: h, p: p || "", fx: fx || "" }; }
+      function Xclose(a, b, tol) { return Math.abs(a - b) <= (tol || 1e-6) * Math.max(1, Math.abs(a), Math.abs(b)); }
+
+      function notYetMessage(low) {
+        var topics = [
+          [/matrix|matrices|determinant/, "Matrices & Determinants (Class 11, Chapter 4 and Class 10, Chapter 3)"],
+          [/trigonometr|\bsin\b|\bcos\b|\btan\b/, "Trigonometry (Class 10, Chapter 7 and Class 11, Chapters 10–11)"],
+          [/probabilit/, "Probability (Class 9, Unit 13 and Class 10, Chapter 12)"],
+          [/mean|median|mode|statistic/, "Information Handling / Statistics (Class 9, Unit 12 and Class 10, Chapter 11)"],
+          [/circle|chord|tangent|arc/, "Circles (Class 10, Chapters 8–10)"],
+          [/\blog\b|logarithm/, "Logarithms (Class 9, Unit 2)"],
+          [/sequence|series/, "Sequences & Series (Class 11, Chapter 6)"],
+          [/vector/, "Vectors in Space (Class 11, Chapter 14)"],
+          [/complex/, "Complex Numbers (Class 11, Chapter 1 and Class 10, Chapter 1)"],
+          [/different|integral|derivative/, "Differentiation & Integration (Class 12, Chapters 2–3)"],
+          [/area|volume|angle|triangle|geometr/, "the Geometry chapters of Class 9–10 in Files → Maths"],
+          [/fraction|percent|ratio|interest|profit/, "the Arithmetic lessons in All Maths by Level"]
+        ];
+        var ptr = "";
+        for (var i = 0; i < topics.length; i++) { if (topics[i][0].test(low)) { ptr = " Closest topic: " + topics[i][1] + " — worked solutions are in the Find a Solution section below and in Files → Maths."; break; } }
+        return "This type of question is not in the solver yet (ye type abhi solver mein nahi). Please check the Find a Solution section below — it holds the worked book solutions for Class 9–12 exercises — or try one of the example questions above." + ptr;
+      }
+
+      /* ----- fractions ----- */
+      function fracOperand(str) { /* -> {f:{n,d}, isFrac} or null */
+        str = String(str).trim();
+        var m = str.match(/^(-?\d+)\s+(\d+)\/(\d+)$/);
+        if (m) { var sgn = (+m[1]) < 0 ? -1 : 1; return { f: Xfrac(sgn * (Math.abs(+m[1]) * (+m[3]) + (+m[2])), +m[3]), isFrac: true, txt: str }; }
+        m = str.match(/^(-?\d+)\/(\d+)$/);
+        if (m) return { f: Xfrac(+m[1], +m[2]), isFrac: true, txt: str };
+        if (/^-?\d+$/.test(str)) return { f: { n: +str, d: 1 }, isFrac: false, txt: str };
+        return null;
+      }
+      function solveFractionArith(t) {
+        var m = t.match(/^\s*(-?\d+\s+\d+\/\d+|-?\d+\/\d+|-?\d+)\s*([+\-*\/])\s*(-?\d+\s+\d+\/\d+|-?\d+\/\d+|-?\d+)\s*$/);
+        if (!m) return null;
+        var A = fracOperand(m[1]), B = fracOperand(m[3]), op = m[2];
+        if (!A || !B || (!A.isFrac && !B.isFrac)) return null;
+        if ((op === "/" || op === "*") && !A.isFrac && !B.isFrac) return null;
+        var a = A.f, b = B.f, steps = [], res, ansDec;
+        var aDec = a.n / a.d, bDec = b.n / b.d;
+        steps.push(Xst("Write both fractions", "Work with the fractions exactly — do not turn them into decimals, or the answer loses its exact form:", A.txt + " " + (op === "*" ? "×" : op === "/" ? "÷" : op) + " " + B.txt));
+        if (op === "+" || op === "-") {
+          var L = Xlcm(a.d, b.d);
+          var na = a.n * (L / a.d), nb = b.n * (L / b.d);
+          steps.push(Xst("Method — use a common denominator", "Fractions can only be added or subtracted when their denominators match. The LCM of " + a.d + " and " + b.d + " is " + L + ":", "LCM(" + a.d + ", " + b.d + ") = " + L));
+          steps.push(Xst("Rewrite both fractions over " + L, "Multiply each numerator and denominator by the same factor so the value does not change:", XfracPlain(a) + " = " + na + "/" + L + " &nbsp; and &nbsp; " + XfracPlain(b) + " = " + nb + "/" + L));
+          var rn = op === "+" ? na + nb : na - nb;
+          steps.push(Xst(op === "+" ? "Add the numerators" : "Subtract the numerators", "The denominator stays " + L + " — only the numerators are combined:", na + " " + op + " " + nb + " = " + rn + " &nbsp;⇒&nbsp; " + rn + "/" + L));
+          res = Xfrac(rn, L);
+          ansDec = aDec + (op === "+" ? bDec : -bDec);
+        } else if (op === "*") {
+          steps.push(Xst("Method — multiply across", "For multiplication: numerator × numerator and denominator × denominator. No common denominator is needed:", XfracPlain(a) + " × " + XfracPlain(b)));
+          res = Xfrac(a.n * b.n, a.d * b.d);
+          steps.push(Xst("Multiply and simplify", a.n + " × " + b.n + " = " + (a.n * b.n) + " and " + a.d + " × " + b.d + " = " + (a.d * b.d) + ", then cancel the common factor:", (a.n * b.n) + "/" + (a.d * b.d) + " = " + XfracPlain(res)));
+          ansDec = aDec * bDec;
+        } else {
+          if (b.n === 0) return null;
+          steps.push(Xst("Method — flip and multiply", "Dividing by a fraction is the same as multiplying by its reciprocal (the fraction flipped over):", XfracPlain(a) + " ÷ " + XfracPlain(b) + " = " + XfracPlain(a) + " × " + b.d + "/" + b.n));
+          res = Xfrac(a.n * b.d, a.d * b.n);
+          steps.push(Xst("Multiply and simplify", "", XfracPlain(a) + " × " + b.d + "/" + b.n + " = " + XfracPlain(res)));
+          ansDec = aDec / bDec;
+        }
+        if (!Xclose(res.n / res.d, ansDec, 1e-9)) return null; /* verified against decimal arithmetic */
+        steps.push(Xst("State the final answer", "In lowest terms" + (Math.abs(res.n) > res.d && res.d !== 1 ? ", written as a mixed number" : "") + ":", XfracStr(res)));
+        return Xmk("Fraction Arithmetic", "Fractions are worked exactly: a common denominator for + and −, multiply-across for ×, and flip-and-multiply for ÷ — then the result is cancelled to its lowest terms.", XfracStr(res), steps);
+      }
+      function solveFractionSimple(t, low) {
+        var ofM = t.replace(/^(what is|find|calculate|evaluate)\s+/i, "").match(/^\s*(-?\d+\s+\d+\/\d+|-?\d+\/\d+)\s+of\s+(\d+(?:\.\d+)?)\s*\??\s*$/);
+        if (ofM) {
+          var fo = fracOperand(ofM[1]); if (!fo) return null;
+          var qty = +ofM[2], resF = fo.f.n * qty / fo.f.d;
+          if (!Xclose(resF * fo.f.d, fo.f.n * qty, 1e-9)) return null;
+          var resFr = XtoFrac(resF);
+          return Xmk("Fraction of a Quantity", "Multiply the quantity by the numerator, then divide by the denominator — the fraction picks out that share of the whole.", (resFr ? XfracStr(resFr) : fmtNum(resF)), [
+            Xst("Multiply by the numerator", fmtNum(qty) + " × " + fo.f.n + " = " + fmtNum(qty * fo.f.n) + ":", ""),
+            Xst("Divide by the denominator", fmtNum(qty * fo.f.n) + " ÷ " + fo.f.d + " = " + fmtNum(resF) + ":", ""),
+            Xst("State the final answer", "", ofM[1] + " of " + fmtNum(qty) + " = " + (resFr ? XfracStr(resFr) : fmtNum(resF)))
+          ]);
+        }
+
+        var m = low.match(/(?:simplify|reduce|lowest terms)[^0-9-]*(-?\d+)\s*\/\s*(\d+)/) || low.match(/(-?\d+)\s*\/\s*(\d+)\s+in (?:its )?simplest form/);
+        if (m) {
+          var n = +m[1], d = +m[2], g = Xgcd(n, d), r = Xfrac(n, d);
+          if (!Xclose(r.n / r.d, n / d, 1e-12)) return null;
+          return Xmk("Simplifying Fractions", "Divide the numerator and denominator by their HCF — the value of the fraction stays the same while the numbers get smaller.", XfracPlain(r), [
+            Xst("Find the HCF of " + n + " and " + d, "The largest number dividing both is:", "HCF(" + n + ", " + d + ") = " + g),
+            Xst("Divide top and bottom by " + g, "", n + "/" + d + " = (" + n + " ÷ " + g + ")/(" + d + " ÷ " + g + ") = " + XfracPlain(r)),
+            Xst("State the final answer", g === 1 ? "The HCF is 1, so the fraction is already in its simplest form:" : "", XfracPlain(r))
+          ]);
+        }
+        m = low.match(/(\d+)\s*\/\s*(\d+)\s+(?:as|to|into)\s+a?\s*mixed number/);
+        if (m) {
+          var f = Xfrac(+m[1], +m[2]); if (!Xclose(f.n / f.d, (+m[1]) / (+m[2]), 1e-12)) return null;
+          var whole = Math.floor(f.n / f.d), rem = f.n % f.d;
+          return Xmk("Improper Fraction → Mixed Number", "Divide the numerator by the denominator: the quotient is the whole part and the remainder stays over the same denominator.", XfracStr(f), [
+            Xst("Divide " + f.n + " by " + f.d, f.n + " ÷ " + f.d + " = " + whole + " remainder " + rem + ":", f.n + " = " + whole + " × " + f.d + " + " + rem),
+            Xst("Write the mixed number", "Whole part " + whole + ", remainder " + rem + " over the denominator " + f.d + ":", XfracStr(f)),
+            Xst("State the final answer", "", XfracStr(f))
+          ]);
+        }
+        m = low.match(/(-?\d+)\s+(\d+)\s*\/\s*(\d+)\s+(?:as|to|into)\s+an?\s+improper fraction/);
+        if (m) {
+          var sg = (+m[1]) < 0 ? -1 : 1, num = sg * (Math.abs(+m[1]) * (+m[3]) + (+m[2])), den = +m[3];
+          if (!Xclose(num / den, (+m[1]) + sg * (+m[2]) / (+m[3]), 1e-12)) return null;
+          return Xmk("Mixed Number → Improper Fraction", "Multiply the whole part by the denominator, add the numerator, and keep the same denominator.", num + "/" + den, [
+            Xst("Multiply and add", "Whole part × denominator + numerator:", Math.abs(+m[1]) + " × " + den + " + " + m[2] + " = " + Math.abs(num)),
+            Xst("State the final answer", "", num + "/" + den)
+          ]);
+        }
+        return null;
+      }
+
+      /* ----- percentages, money ----- */
+      function solvePercent(t, low) {
+        var m, steps;
+        m = low.match(/(?:what is\s+)?(\d+(?:\.\d+)?)\s*%\s*of\s*(\d+(?:\.\d+)?)/);
+        if (m) {
+          var p = +m[1], n = +m[2], ans = p / 100 * n;
+          if (!Xclose(ans / n * 100, p)) return null;
+          return Xmk("Percentage of a Number", "A percentage is a fraction out of 100: turn the % into /100, then multiply by the number.", fmtNum(ans), [
+            Xst("Turn the percentage into a fraction", p + "% means " + p + " out of every 100:", p + "% = " + p + "/100 = " + fmtNum(p / 100)),
+            Xst("Multiply by the number", "\"Of\" means multiply:", fmtNum(p / 100) + " × " + fmtNum(n) + " = " + fmtNum(ans)),
+            Xst("State the final answer", "", p + "% of " + fmtNum(n) + " = " + fmtNum(ans))
+          ]);
+        }
+        m = low.match(/(increase|decrease|reduce|drop)\s+(\d+(?:\.\d+)?)\s+by\s+(\d+(?:\.\d+)?)\s*%/);
+        if (m) {
+          var up = m[1] === "increase", base = +m[2], pc = +m[3], chg = base * pc / 100, res2 = up ? base + chg : base - chg;
+          if (!Xclose(Math.abs(res2 - base), chg)) return null;
+          return Xmk(up ? "Percentage Increase" : "Percentage Decrease", "First find the percentage amount, then " + (up ? "add it to" : "subtract it from") + " the original value.", fmtNum(res2), [
+            Xst("Find " + pc + "% of " + fmtNum(base), "", pc + "/100 × " + fmtNum(base) + " = " + fmtNum(chg)),
+            Xst(up ? "Add the increase" : "Subtract the decrease", "", fmtNum(base) + (up ? " + " : " − ") + fmtNum(chg) + " = " + fmtNum(res2)),
+            Xst("State the final answer", "", fmtNum(res2))
+          ]);
+        }
+        m = low.match(/(?:what (?:percent|percentage) is|express)\s+(\d+(?:\.\d+)?)\s+(?:as a percentage of|of|out of)\s+(\d+(?:\.\d+)?)/) || low.match(/(\d+(?:\.\d+)?)\s+out of\s+(\d+(?:\.\d+)?)\s+as a percentage/);
+        if (m) {
+          var part = +m[1], whole = +m[2]; if (!whole) return null;
+          var pcv = part / whole * 100;
+          if (!Xclose(pcv / 100 * whole, part)) return null;
+          return Xmk("One Number as a Percentage of Another", "Divide the part by the whole to get a fraction, then multiply by 100 to turn it into a percentage.", fmtNum(pcv) + "%", [
+            Xst("Write the part over the whole", "", fmtNum(part) + "/" + fmtNum(whole) + " = " + fmtNum(part / whole)),
+            Xst("Multiply by 100", "", fmtNum(part / whole) + " × 100 = " + fmtNum(pcv) + "%"),
+            Xst("State the final answer", "", fmtNum(pcv) + "%")
+          ]);
+        }
+        if (/discount/.test(low)) {
+          var pm = low.match(/(\d+(?:\.\d+)?)\s*%/), nums = low.match(/\d+(?:\.\d+)?/g);
+          var price = null;
+          var prm = low.match(/(?:price|cost|marked|worth|of)\s*(?:is|:)?\s*(?:rs\.?|£|\$)?\s*(\d+(?:\.\d+)?)/);
+          if (prm) price = +prm[1];
+          if (price === null && nums) { for (var i = 0; i < nums.length; i++) { if (+nums[i] !== +pm[1]) { price = +nums[i]; break; } } }
+          if (pm && price !== null) {
+            var dp = +pm[1], damt = price * dp / 100, sale = price - damt;
+            if (!Xclose(sale + damt, price)) return null;
+            return Xmk("Discount & Sale Price", "The discount is a percentage of the marked price; the sale price is what remains after taking the discount away.", "Sale price = " + fmtNum(sale) + " (discount " + fmtNum(damt) + ")", [
+              Xst("Find the discount", dp + "% of " + fmtNum(price) + ":", dp + "/100 × " + fmtNum(price) + " = " + fmtNum(damt)),
+              Xst("Subtract from the marked price", "", fmtNum(price) + " − " + fmtNum(damt) + " = " + fmtNum(sale)),
+              Xst("State the final answer", "", "Sale price = " + fmtNum(sale))
+            ]);
+          }
+        }
+        if (/(profit|loss)/.test(low)) {
+          var cm = low.match(/(?:cost(?: price)?|bought|buying price)\s*(?:is|for|at|:)?\s*(?:rs\.?|£|\$)?\s*(\d+(?:\.\d+)?)/);
+          var sm = low.match(/(?:sold|selling(?: price)?|sell)\s*(?:is|for|at|:)?\s*(?:rs\.?|£|\$)?\s*(\d+(?:\.\d+)?)/);
+          if (cm && sm) {
+            var cp = +cm[1], sp = +sm[1], diff = sp - cp, isP = diff >= 0, pct = Math.abs(diff) / cp * 100;
+            if (!Xclose(cp + diff, sp)) return null;
+            return Xmk(isP ? "Profit & Profit %" : "Loss & Loss %", (isP ? "Profit" : "Loss") + " = selling price − cost price; the percentage is always worked out on the COST price.", (isP ? "Profit" : "Loss") + " = " + fmtNum(Math.abs(diff)) + ", " + fmtNum(pct) + "%", [
+              Xst("Compare the two prices", "Cost price = " + fmtNum(cp) + ", selling price = " + fmtNum(sp) + ":", fmtNum(sp) + " − " + fmtNum(cp) + " = " + fmtNum(diff)),
+              Xst("Work out the percentage on the cost price", "", fmtNum(Math.abs(diff)) + "/" + fmtNum(cp) + " × 100 = " + fmtNum(pct) + "%"),
+              Xst("State the final answer", "", (isP ? "Profit" : "Loss") + " = " + fmtNum(Math.abs(diff)) + " (" + fmtNum(pct) + "%)")
+            ]);
+          }
+        }
+        if (/simple interest/.test(low)) {
+          var pr = low.match(/(?:principal|borrow\w*|deposit\w*|invest\w*|sum)\s*(?:of|is|:)?\s*(?:rs\.?|£|\$)?\s*(\d+(?:\.\d+)?)/);
+          var rt = low.match(/(\d+(?:\.\d+)?)\s*%\s*(?:per|a|an)?\s*(?:annum|year)?/);
+          var tm = low.match(/(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/);
+          if (pr && rt && tm) {
+            var P = +pr[1], R = +rt[1], T = +tm[1], si = P * R * T / 100;
+            if (!Xclose(si * 100, P * R * T)) return null;
+            return Xmk("Simple Interest", "Simple interest is charged only on the original principal: SI = (P × R × T) / 100, with R the yearly rate and T the time in years.", "SI = " + fmtNum(si) + " (total amount " + fmtNum(P + si) + ")", [
+              Xst("Write down P, R and T", "", "P = " + fmtNum(P) + ", &nbsp; R = " + fmtNum(R) + "% per year, &nbsp; T = " + fmtNum(T) + " years"),
+              Xst("Substitute into the formula", "", "SI = (" + fmtNum(P) + " × " + fmtNum(R) + " × " + fmtNum(T) + ") / 100"),
+              Xst("Calculate", "", "SI = " + fmtNum(P * R * T) + " / 100 = " + fmtNum(si)),
+              Xst("State the final answer", "Total amount = principal + interest = " + fmtNum(P) + " + " + fmtNum(si) + ":", "SI = " + fmtNum(si))
+            ]);
+          }
+        }
+        return null;
+      }
+
+      /* ----- HCF / LCM / primes / standard form / surds ----- */
+      function primeFactorStr(n) {
+        var f = [], d = 2, x = n;
+        while (d * d <= x) { while (x % d === 0) { f.push(d); x /= d; } d++; }
+        if (x > 1) f.push(x);
+        var counts = {}, order = [];
+        f.forEach(function (p) { if (!counts[p]) { counts[p] = 0; order.push(p); } counts[p]++; });
+        return order.map(function (p) { return counts[p] > 1 ? p + sup(counts[p]) : String(p); }).join(" × ");
+      }
+      function solveHcfLcm(t, low) {
+        var isH = /hcf|gcd|highest common factor|greatest common/.test(low), isL = /lcm|lowest common multiple|least common multiple/.test(low);
+        if (!isH && !isL) return null;
+        var rest = low.replace(/.*?(?:of|for)\s+/, "");
+        var nums = Xlist(rest.replace(/\?$/, ""));
+        if (!nums || nums.length < 2 || nums.some(function (n) { return !XisInt(n) || n <= 0; })) return null;
+        var ints = nums.map(Math.round);
+        if (isH) {
+          var h = ints.reduce(Xgcd);
+          for (var i = 0; i < ints.length; i++) if (ints[i] % h !== 0) return null;
+          var steps = [Xst("Write each number in prime factors", "Break every number into primes — the HCF uses only the primes common to ALL of them, at their lowest powers:", ints.map(function (n) { return n + " = " + primeFactorStr(n); }).join(" &nbsp;·&nbsp; "))];
+          steps.push(Xst("Take the common primes at the lowest power", "", "HCF = " + h));
+          steps.push(Xst("Check", h + " divides every number exactly:", ints.map(function (n) { return n + " ÷ " + h + " = " + (n / h); }).join(" &nbsp;·&nbsp; ") + " ✓"));
+          steps.push(Xst("State the final answer", "", "HCF = " + h));
+          return Xmk("Highest Common Factor (HCF)", "Write each number as a product of prime factors; the HCF is the product of the primes that appear in every number, each at its lowest power.", "HCF = " + h, steps);
+        }
+        var l = ints.reduce(Xlcm);
+        for (var j = 0; j < ints.length; j++) if (l % ints[j] !== 0) return null;
+        var stepsL = [Xst("Write each number in prime factors", "The LCM uses every prime that appears, at its HIGHEST power:", ints.map(function (n) { return n + " = " + primeFactorStr(n); }).join(" &nbsp;·&nbsp; "))];
+        stepsL.push(Xst("Multiply the highest powers together", "", "LCM = " + l));
+        stepsL.push(Xst("Check", l + " is a multiple of every number:", ints.map(function (n) { return l + " ÷ " + n + " = " + (l / n); }).join(" &nbsp;·&nbsp; ") + " ✓"));
+        stepsL.push(Xst("State the final answer", "", "LCM = " + l));
+        return Xmk("Lowest Common Multiple (LCM)", "Write each number as a product of prime factors; the LCM is the product of every prime at its highest power.", "LCM = " + l, stepsL);
+      }
+      function solvePrimeFactor(low) {
+        var m = low.match(/prime factor\w*\s+of\s+(\d+)/) || low.match(/(\d+)\s+into (?:its )?prime factors/);
+        if (!m) return null;
+        var n = +m[1]; if (n < 2) return null;
+        var str = primeFactorStr(n);
+        var prod = 1, mm = str.replace(/<sup>(\d+)<\/sup>/g, "^$1").split(" × ").forEach(function (part) { var pp = part.split("^"); prod *= Math.pow(+pp[0], pp[1] ? +pp[1] : 1); });
+        if (prod !== n) return null;
+        return Xmk("Prime Factorisation", "Divide by the smallest prime that fits, again and again, until only 1 is left — the divisors used are the prime factors.", n + " = " + str, [
+          Xst("Divide by primes in turn", "Keep dividing " + n + " by 2, then 3, then 5, … taking out each prime as many times as it divides:", n + " = " + str),
+          Xst("Check by multiplying back", "", str.replace(/<sup>(\d+)<\/sup>/g, "^$1") + " = " + prod + " ✓"),
+          Xst("State the final answer", "", n + " = " + str)
+        ]);
+      }
+      function solveStandardForm(low) {
+        var m = low.match(/(\d+(?:\.\d+)?)\s*(?:x|×|\*)\s*10\s*\^?\s*(-?\d+)\s*(?:as|to|into)\s+an?\s+ordinary/);
+        if (m) {
+          var val = (+m[1]) * Math.pow(10, +m[2]);
+          if (!Xclose(val / Math.pow(10, +m[2]), +m[1])) return null;
+          return Xmk("Standard Form → Ordinary Number", "a × 10ⁿ means move the decimal point n places — to the right for positive n, to the left for negative n.", fmtNum(val), [
+            Xst("Apply the power of 10", m[1] + " × 10" + sup(m[2]) + " — move the point " + Math.abs(+m[2]) + " places " + ((+m[2]) >= 0 ? "right" : "left") + ":", fmtNum(val)),
+            Xst("State the final answer", "", fmtNum(val))
+          ]);
+        }
+        m = low.match(/(?:standard form|scientific notation)[^0-9]*(\d+(?:\.\d+)?)/) || low.match(/(\d+(?:\.\d+)?)\s+in standard form/);
+        if (m) {
+          var num = parseFloat(m[1]); if (!num) return null;
+          var exp = Math.floor(Math.log10(Math.abs(num)));
+          var coef = num / Math.pow(10, exp);
+          if (!Xclose(coef * Math.pow(10, exp), num, 1e-9)) return null;
+          var cs = fmtNum(Math.round(coef * 10000) / 10000);
+          return Xmk("Standard Form (Scientific Notation)", "Standard form is a × 10ⁿ with 1 ≤ a < 10: slide the decimal point until one non-zero digit stands before it, and count the slides as the power.", cs + " × 10" + sup(exp), [
+            Xst("Move the decimal point", "Move the point until the number is between 1 and 10:", fmtNum(num) + " → " + cs),
+            Xst("Count the moves as the power", "The point moved " + Math.abs(exp) + " places " + (exp >= 0 ? "(number is large, power positive)" : "(number is small, power negative)") + ":", "10" + sup(exp)),
+            Xst("State the final answer", "", cs + " × 10" + sup(exp))
+          ]);
+        }
+        return null;
+      }
+      function solveSurd(t, low) {
+        var m = t.match(/sqrt\s*\(?\s*(\d+)\s*\)?/);
+        if (!m || !/simplify|surd|root/.test(low)) return null;
+        var n = +m[1], a = 1, b = n;
+        for (var d = Math.floor(Math.sqrt(n)); d >= 2; d--) { if (n % (d * d) === 0) { a = d; b = n / (d * d); break; } }
+        if (a * a * b !== n) return null;
+        if (b === 1) return Xmk("Simplifying a Square Root", "This root is exact — the number is a perfect square.", "√" + n + " = " + a, [
+          Xst("Recognise the perfect square", a + " × " + a + " = " + n + ":", "√" + n + " = " + a),
+          Xst("State the final answer", "", "√" + n + " = " + a)
+        ]);
+        if (a === 1) return null; /* already simplest — nothing to teach */
+        return Xmk("Simplifying Surds", "Pull the largest perfect-square factor out of the root: √n = √(a² × b) = a√b.", "√" + n + " = " + a + "√" + b, [
+          Xst("Find the largest square factor of " + n, n + " = " + (a * a) + " × " + b + ", and " + (a * a) + " is a perfect square (" + a + "²):", n + " = " + a + "² × " + b),
+          Xst("Take the square root of the square part", "√(" + a + "² × " + b + ") = √(" + a + "²) × √" + b + " = " + a + "√" + b + ":", "√" + n + " = " + a + "√" + b),
+          Xst("Check", "(" + a + "√" + b + ")² = " + a + "² × " + b + " = " + (a * a * b) + " ✓", ""),
+          Xst("State the final answer", "", "√" + n + " = " + a + "√" + b)
+        ]);
+      }
+      function solveRootsWords(low) {
+        var m = low.match(/cube root of\s+(\d+(?:\.\d+)?)/);
+        if (m) { var n = +m[1], r = Math.round(Math.cbrt(n)); if (r * r * r !== n) return null;
+          return Xmk("Cube Root", "The cube root of n is the number that multiplied by itself three times gives n.", "∛" + fmtNum(n) + " = " + r, [
+            Xst("Look for the number whose cube is " + fmtNum(n), r + " × " + r + " × " + r + " = " + (r * r * r) + ":", "∛" + fmtNum(n) + " = " + r),
+            Xst("State the final answer", "", "∛" + fmtNum(n) + " = " + r) ]); }
+        m = low.match(/square root of\s+(\d+(?:\.\d+)?)/);
+        if (m) { var n2 = +m[1], r2 = Math.sqrt(n2); if (!Xclose(r2 * r2, n2)) return null;
+          return Xmk("Square Root", "The square root of n is the number that multiplied by itself gives n.", "√" + fmtNum(n2) + " = " + fmtNum(r2), [
+            Xst("Find the number whose square is " + fmtNum(n2), fmtNum(r2) + " × " + fmtNum(r2) + " = " + fmtNum(r2 * r2) + ":", "√" + fmtNum(n2) + " = " + fmtNum(r2)),
+            Xst("State the final answer", "", "√" + fmtNum(n2) + " = " + fmtNum(r2)) ]); }
+        return null;
+      }
+
+      /* ----- algebra: simultaneous, inequalities, proportion, logs ----- */
+      function parseLinear2(str) { /* a x + b y + c from a side string, or null */
+        var t = String(str).replace(/\s+/g, "").replace(/−/g, "-");
+        if (!t) return null;
+        var terms = t.match(/[+-]?[^+-]+/g);
+        if (!terms) return null;
+        var out = { x: 0, y: 0, c: 0 };
+        for (var i = 0; i < terms.length; i++) {
+          var term = terms[i], sign = 1;
+          if (term[0] === "+") term = term.slice(1); else if (term[0] === "-") { sign = -1; term = term.slice(1); }
+          var m = term.match(/^(\d+(?:\.\d+)?)?([xy])(?:\/(\d+(?:\.\d+)?))?$/) || term.match(/^(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/) || term.match(/^(\d+(?:\.\d+)?)$/);
+          if (!m) return null;
+          if (m[2] === "x" || m[2] === "y") out[m[2]] += sign * (m[1] ? +m[1] : 1) / (m[3] ? +m[3] : 1);
+          else if (m[2] !== undefined && m[1] !== undefined && term.indexOf("/") > 0 && !/[xy]/.test(term)) out.c += sign * (+m[1]) / (+m[2]);
+          else if (/^\d/.test(term)) out.c += sign * (+m[1]);
+          else return null;
+        }
+        return out;
+      }
+      function lin2Str(a, b, vv) { /* "2x + 3y" style for one side a*x + b*y */
+        function term(c, sym, first) {
+          if (!c) return "";
+          var s = Math.abs(c) === 1 ? sym : fmtNum(Math.abs(c)) + sym;
+          return (first ? (c < 0 ? "−" : "") : (c < 0 ? " − " : " + ")) + s;
+        }
+        var out = term(a, vv === "xy" ? "x" : "x", true) + term(b, "y", !a);
+        return out || "0";
+      }
+      function solveSimultaneous(t, low) {
+        var body = t.replace(/^solve\s+/i, "");
+        if ((body.match(/=/g) || []).length !== 2) return null;
+        if (!/x/.test(low) || !/y/.test(low)) return null;
+        var parts = body.split(/\band\b|;|\n/);
+        if (parts.length !== 2) return null;
+        var eqs = [];
+        for (var i = 0; i < 2; i++) {
+          var sides = parts[i].split("=");
+          if (sides.length !== 2) return null;
+          var L = parseLinear2(sides[0]), R = parseLinear2(sides[1]);
+          if (!L || !R) return null;
+          eqs.push({ a: L.x - R.x, b: L.y - R.y, k: R.c - L.c, raw: parts[i].trim() });
+        }
+        var e1 = eqs[0], e2 = eqs[1];
+        var D = e1.a * e2.b - e2.a * e1.b;
+        var steps = [Xst("Write both equations in the form ax + by = k", "Move the constants to the right-hand side in each equation:", "(1) &nbsp;" + lin2Str(e1.a, e1.b) + " = " + fmtNum(e1.k) + " &nbsp;&nbsp;·&nbsp;&nbsp; (2) &nbsp;" + lin2Str(e2.a, e2.b) + " = " + fmtNum(e2.k))];
+        if (Math.abs(D) < 1e-12) {
+          var parallel = Xclose(e1.a * e2.k, e2.a * e1.k) && Xclose(e1.b * e2.k, e2.b * e1.k);
+          steps.push(Xst("Compare the two equations", parallel ? "The left-hand sides are proportional AND the constants match the same proportion — the two equations describe the SAME line." : "The left-hand sides are proportional but the constants are not — the lines are parallel and never meet.", parallel ? "Same line" : "Parallel lines"));
+          steps.push(Xst("State the final answer", "", parallel ? "Infinitely many solutions (the equations are the same line)" : "No solution (the lines are parallel)"));
+          return Xmk("Simultaneous Equations — Special Case", "When the two equations are proportional, they are either the same line (endless solutions) or parallel lines (no solution).", parallel ? "Infinitely many solutions" : "No solution", steps);
+        }
+        var xv = (e1.k * e2.b - e2.k * e1.b) / D;
+        var yv = (e1.a * e2.k - e2.a * e1.k) / D;
+        if (!Xclose(e1.a * xv + e1.b * yv, e1.k, 1e-7) || !Xclose(e2.a * xv + e2.b * yv, e2.k, 1e-7)) return null; /* verified by substitution */
+        steps.push(Xst("Method — elimination", "Multiply each equation so the y-coefficients match, then subtract to eliminate y. Equation (1) × " + fmtNum(e2.b) + " and equation (2) × " + fmtNum(e1.b) + ":", lin2Str(e1.a * e2.b, e1.b * e2.b) + " = " + fmtNum(e1.k * e2.b) + " &nbsp;·&nbsp; " + lin2Str(e2.a * e1.b, e2.b * e1.b) + " = " + fmtNum(e2.k * e1.b)));
+        steps.push(Xst("Subtract to find x", "Subtracting removes y completely:", fmtNum(e1.a * e2.b - e2.a * e1.b) + "x = " + fmtNum(e1.k * e2.b - e2.k * e1.b) + " &nbsp;⇒&nbsp; x = " + fmtNum(xv)));
+        steps.push(Xst("Substitute x back into equation (1)", "Put x = " + fmtNum(xv) + " into the simpler original equation and solve for y:", lin2Str(e1.a, e1.b) + " = " + fmtNum(e1.k) + " &nbsp;⇒&nbsp; y = " + fmtNum(yv)));
+        steps.push(Xst("Check in BOTH original equations", "A correct pair must satisfy both at once:", "Eq (1): " + fmtNum(e1.a * xv + e1.b * yv) + " = " + fmtNum(e1.k) + " ✓ &nbsp;·&nbsp; Eq (2): " + fmtNum(e2.a * xv + e2.b * yv) + " = " + fmtNum(e2.k) + " ✓"));
+        steps.push(Xst("State the final answer", "", "x = " + fmtNum(xv) + ", &nbsp; y = " + fmtNum(yv)));
+        return Xmk("Simultaneous Equations (Elimination)", "Eliminate one variable by making its coefficients equal and subtracting, solve for the other, then substitute back — and check the pair in both equations.", "x = " + fmtNum(xv) + ", y = " + fmtNum(yv), steps);
+      }
+      function solveInequality(t, low, v) {
+        var body = t.replace(/^solve\s+/i, "").replace(/≥/g, ">=").replace(/≤/g, "<=");
+        var m = body.match(/^(.+?)\s*(>=|<=|>|<)\s*(.+)$/);
+        if (!m) return null;
+        var op = m[2];
+        var L, R;
+        try { L = parseExpression(cleanExpr(m[1])); R = parseExpression(cleanExpr(m[3])); } catch (e) { return null; }
+        var lp = toPoly(L), rp = toPoly(R);
+        if (!lp || !rp) return null;
+        var diff = polyAdd(lp, rp, -1), deg = polyDegree(diff);
+        function opSym(o) { return o === ">=" ? "≥" : o === "<=" ? "≤" : o; }
+        function flip(o) { return o === ">" ? "<" : o === "<" ? ">" : o === ">=" ? "<=" : ">="; }
+        if (deg === 1) {
+          var a = diff[1], b = diff[0] || 0, bound = -b / a, o2 = a < 0 ? flip(op) : op;
+          var inside = o2 === ">" || o2 === ">=" ? bound + 1 : bound - 1;
+          var outside = o2 === ">" || o2 === ">=" ? bound - 1 : bound + 1;
+          function valAt(x) { return a * x + b; }
+          var testIn = valAt(inside), testOut = valAt(outside);
+          var inOK = op === ">" ? testIn > 0 : op === "<" ? testIn < 0 : op === ">=" ? testIn >= 0 : testIn <= 0;
+          var outOK = op === ">" ? testOut > 0 : op === "<" ? testOut < 0 : op === ">=" ? testOut >= 0 : testOut <= 0;
+          if (!inOK || outOK) return null; /* verified with test values */
+          var steps = [
+            Xst("Collect everything on the left", "Move all terms to one side, exactly as for an equation:", polyToHTML(diff, v) + " " + opSym(op) + " 0"),
+            Xst("Isolate the " + v + " term", "Move the constant across — its sign flips:", fmtNum(a) + v + " " + opSym(op) + " " + fmtNum(-b)),
+            Xst("Divide both sides by " + fmtNum(a), a < 0 ? "Dividing by a NEGATIVE number flips the inequality sign — this is the step most students miss:" : "The inequality sign stays the same (dividing by a positive):", v + " " + opSym(o2) + " " + fmtNum(bound)),
+            Xst("Check with a test value", "Try " + v + " = " + fmtNum(inside) + " (inside the answer): the original gives " + fmtNum(testIn) + " " + opSym(op) + " 0 ✓. Try " + v + " = " + fmtNum(outside) + " (outside): " + fmtNum(testOut) + " — correctly fails ✓", ""),
+            Xst("State the final answer", "", v + " " + opSym(o2) + " " + fmtNum(bound))
+          ];
+          return Xmk("Linear Inequality", "Solve like an equation, with one extra rule: multiplying or dividing by a negative number flips the inequality sign.", v + " " + opSym(o2) + " " + fmtNum(bound), steps);
+        }
+        if (deg === 2) {
+          var a2 = diff[2], b2 = diff[1] || 0, c2 = diff[0] || 0, D = b2 * b2 - 4 * a2 * c2;
+          if (D <= 0) return null;
+          var sq = Math.sqrt(D), r1 = (-b2 - sq) / (2 * a2), r2 = (-b2 + sq) / (2 * a2);
+          if (r1 > r2) { var tmp = r1; r1 = r2; r2 = tmp; }
+          function q(x) { return a2 * x * x + b2 * x + c2; }
+          var mid = (r1 + r2) / 2, out1 = r1 - 1, out2 = r2 + 1;
+          var wantPos = op === ">" || op === ">=";
+          var midSign = q(mid) > 0, outSign = q(out1) > 0;
+          if (midSign === outSign) return null;
+          var solutionIsOutside = wantPos === outSign;
+          if ((q(out2) > 0) !== outSign) return null;
+          var incl = op === ">=" || op === "<=";
+          var ans = solutionIsOutside ? (v + " " + (incl ? "≤" : "<") + " " + fmtNum(r1) + " &nbsp; or &nbsp; " + v + " " + (incl ? "≥" : ">") + " " + fmtNum(r2)) : (fmtNum(r1) + " " + (incl ? "≤" : "<") + " " + v + " " + (incl ? "≤" : "<") + " " + fmtNum(r2));
+          var stepsQ = [
+            Xst("Collect everything on the left", "", polyToHTML(diff, v) + " " + opSym(op) + " 0"),
+            Xst("Find where the quadratic equals zero", "Solve " + polyToHTML(diff, v) + " = 0 — the roots split the number line into regions:", v + " = " + fmtNum(r1) + " &nbsp; and &nbsp; " + v + " = " + fmtNum(r2)),
+            Xst("Test the middle region", "Try " + v + " = " + fmtNum(mid) + " (between the roots): the value is " + fmtNum(q(mid)) + ", which is " + (midSign ? "positive" : "negative") + ".", ""),
+            Xst("Test an outside region", "Try " + v + " = " + fmtNum(out1) + ": the value is " + fmtNum(q(out1)) + ", which is " + (outSign ? "positive" : "negative") + ". A quadratic keeps one sign in each region, so this settles every region.", ""),
+            Xst("Pick the regions that satisfy the inequality", "We need the expression " + (wantPos ? "positive (or zero)" : "negative (or zero)") + ":", ans),
+            Xst("State the final answer", "", ans)
+          ];
+          return Xmk("Quadratic Inequality", "Find the roots first — they divide the number line into regions. Test one value in each region; the quadratic keeps the same sign throughout a region.", ans, stepsQ);
+        }
+        return null;
+      }
+      function solveProportion(t) {
+        var body = t.replace(/^solve\s+/i, "");
+        var m = body.match(/^\s*(-?\d+(?:\.\d+)?|x)\s*\/\s*(-?\d+(?:\.\d+)?|x)\s*=\s*(-?\d+(?:\.\d+)?|x)\s*\/\s*(-?\d+(?:\.\d+)?|x)\s*$/);
+        if (!m) return null;
+        var parts = [m[1], m[2], m[3], m[4]], xCount = parts.filter(function (p) { return p === "x"; }).length;
+        if (xCount !== 1) return null;
+        var xi = parts.indexOf("x");
+        var vals = parts.map(function (p) { return p === "x" ? null : +p; });
+        var xv;
+        if (xi === 0) xv = vals[1] * vals[2] / vals[3];
+        else if (xi === 1) xv = vals[0] * vals[3] / vals[2];
+        else if (xi === 2) xv = vals[3] * vals[0] / vals[1];
+        else xv = vals[2] * vals[1] / vals[0];
+        function sideVal(i) { var num = i === 0 || i === 2 ? (parts[i] === "x" ? xv : vals[i]) : null; return num; }
+        var lhs = (parts[0] === "x" ? xv : vals[0]) / (parts[1] === "x" ? xv : vals[1]);
+        var rhs = (parts[2] === "x" ? xv : vals[2]) / (parts[3] === "x" ? xv : vals[3]);
+        if (!Xclose(lhs, rhs, 1e-7)) return null; /* verified: both sides equal */
+        return Xmk("Proportion (Cross-Multiplication)", "In a proportion a/b = c/d, the cross-products are equal: a × d = b × c. Cross-multiply, then solve the simple equation that results.", "x = " + fmtNum(xv), [
+          Xst("Write the proportion", "", parts[0] + "/" + parts[1] + " = " + parts[2] + "/" + parts[3]),
+          Xst("Cross-multiply", "Multiply the numerator of each side by the denominator of the other side:", "x is isolated by cross-multiplication"),
+          Xst("Solve for x", "", "x = " + fmtNum(xv)),
+          Xst("Check", "Substitute back — both sides must be equal:", fmtNum(lhs) + " = " + fmtNum(rhs) + " ✓"),
+          Xst("State the final answer", "", "x = " + fmtNum(xv))
+        ]);
+      }
+      function solveLogEquations(t, low) {
+        var body = t.replace(/^solve\s+/i, "").replace(/\s+/g, "");
+        var m = body.match(/^log\(x\)=(-?\d+(?:\.\d+)?)$/);
+        if (m) { var k = +m[1], xv = Math.pow(10, k); if (!Xclose(Math.log10(xv), k)) return null;
+          return Xmk("Logarithmic Equation", "log x = k means 10ᵏ = x — the log is the power to which 10 must be raised.", "x = " + fmtNum(xv), [
+            Xst("Use the definition of a logarithm", "log₁₀ x = k &nbsp;⇔&nbsp; x = 10ᵏ. Here k = " + fmtNum(k) + ":", "x = 10" + sup(fmtNum(k))),
+            Xst("Calculate", "", "x = " + fmtNum(xv)),
+            Xst("Check", "log(" + fmtNum(xv) + ") = " + fmtNum(Math.log10(xv)) + " ✓", ""),
+            Xst("State the final answer", "", "x = " + fmtNum(xv)) ]); }
+        m = body.match(/^ln\(x\)=(-?\d+(?:\.\d+)?)$/);
+        if (m) { var k2 = +m[1], xv2 = Math.exp(k2); if (!Xclose(Math.log(xv2), k2)) return null;
+          return Xmk("Logarithmic Equation (ln)", "ln x = k means eᵏ = x — ln is the power to which e must be raised.", "x = " + fmtNum(xv2), [
+            Xst("Use the definition of ln", "ln x = k &nbsp;⇔&nbsp; x = eᵏ. Here k = " + fmtNum(k2) + ":", "x = e" + sup(fmtNum(k2))),
+            Xst("Calculate", "", "x = " + fmtNum(xv2)),
+            Xst("Check", "ln(" + fmtNum(xv2) + ") = " + fmtNum(Math.log(xv2)) + " ✓", ""),
+            Xst("State the final answer", "", "x = " + fmtNum(xv2)) ]); }
+        m = body.match(/^(\d+(?:\.\d+)?)\^x=(\d+(?:\.\d+)?)$/);
+        if (m) { var base = +m[1], val = +m[2]; if (base <= 0 || base === 1 || val <= 0) return null;
+          var xe = Math.log(val) / Math.log(base); if (!Xclose(Math.pow(base, xe), val, 1e-7)) return null;
+          var exact = XisInt(xe) ? Math.round(xe) : null;
+          var stepsE = [Xst("Take logs of both sides", "The unknown is in the power, so bring it down with a logarithm: x · ln " + fmtNum(base) + " = ln " + fmtNum(val) + ":", "x = ln " + fmtNum(val) + " / ln " + fmtNum(base))];
+          if (exact !== null) stepsE.push(Xst("Recognise the power", fmtNum(val) + " is a power of " + fmtNum(base) + ": " + fmtNum(base) + sup(exact) + " = " + fmtNum(Math.pow(base, exact)) + ":", "x = " + exact));
+          stepsE.push(Xst("Calculate", "", "x = " + fmtNum(xe)));
+          stepsE.push(Xst("Check", fmtNum(base) + sup(fmtNum(xe)) + " = " + fmtNum(Math.pow(base, xe)) + " ✓", ""));
+          stepsE.push(Xst("State the final answer", "", "x = " + fmtNum(xe)));
+          return Xmk("Exponential Equation", "When the unknown sits in the power, take logarithms of both sides — the log brings the power down so x can be isolated.", "x = " + fmtNum(xe), stepsE); }
+        m = low.match(/log\s*(?:base\s*)?(\d+)\s*(?:of\s*)?\(?\s*(\d+(?:\.\d+)?)\s*\)?\s*$/) || low.match(/^log(\d+)\((\d+(?:\.\d+)?)\)/);
+        if (m && /log/.test(low) && !/\(x\)/.test(low)) { var b3 = +m[1], v3 = +m[2]; if (b3 > 0 && b3 !== 1 && v3 > 0) { var lv = Math.log(v3) / Math.log(b3); if (!Xclose(Math.pow(b3, lv), v3, 1e-7)) return null;
+          return Xmk("Logarithm to a Given Base", "log base b of n asks: \"to what power must b be raised to give n?\" — computed as ln n / ln b (change of base).", "log" + " (base " + b3 + ") of " + fmtNum(v3) + " = " + fmtNum(lv), [
+            Xst("Change of base", "", "log" + sup("") + " = ln " + fmtNum(v3) + " / ln " + fmtNum(b3)),
+            Xst("Calculate", "", "= " + fmtNum(lv)),
+            Xst("Check", b3 + sup(fmtNum(lv)) + " = " + fmtNum(Math.pow(b3, lv)) + " ✓", ""),
+            Xst("State the final answer", "", fmtNum(lv)) ]); } }
+        return null;
+      }
+
+      /* ----- algebra: expand, factor extras, completing the square ----- */
+      function solveExpand(t, low) {
+        if (!/^expand/.test(low)) return null;
+        var exprStr = cleanExpr(t.replace(/^expand\s*(of\s*)?/i, ""));
+        var ast; try { ast = parseExpression(exprStr); } catch (e) { return null; }
+        var p = toPoly(ast); if (!p) return null;
+        var out = polyToHTML(p, "x");
+        var chk1 = evalAST(ast, 2), chk2 = evalAST(ast, -1);
+        var pv = {}; for (var d in p) pv[d] = p[d];
+        function polyVal(pp, x) { var s = 0; for (var dd in pp) s += pp[dd] * Math.pow(x, +dd); return s; }
+        if (!Xclose(chk1, polyVal(pv, 2), 1e-7) || !Xclose(chk2, polyVal(pv, -1), 1e-7)) return null; /* verified at two points */
+        var steps = [Xst("Write the brackets", "", exprHTML(ast, "x"))];
+        var fm = exprStr.match(/\(([^()]*)\)\s*\(([^()]*)\)/);
+        if (fm) {
+          var p1 = toPoly(parseExpression(fm[1])), p2 = toPoly(parseExpression(fm[2]));
+          if (p1 && p2) {
+            steps.push(Xst("Method — multiply every term in the first bracket by every term in the second", "Each term of the first bracket meets each term of the second (FOIL for two-term brackets: First, Outer, Inner, Last):", "(" + polyToHTML(p1, "x") + ")(" + polyToHTML(p2, "x") + ")"));
+          }
+        }
+        steps.push(Xst("Multiply out and collect like terms", "After multiplying, gather the x² terms, x terms and constants:", out));
+        steps.push(Xst("Check with x = 2", "Original: " + fmtNum(chk1) + " &nbsp;·&nbsp; Expanded: " + fmtNum(polyVal(pv, 2)) + " ✓ — the two agree, so the expansion is right.", ""));
+        steps.push(Xst("State the final answer", "", out));
+        return Xmk("Expanding Brackets", "Every term in one bracket is multiplied by every term in the other; then like terms are collected.", out, steps);
+      }
+      function solveFactorExtra(t, low, v) {
+        if (!/factor/.test(low)) return null;
+        var fstr = cleanExpr(t.replace(/.*factor(i[sz]e)?\s*(of)?/i, ""));
+        var ast; try { ast = parseExpression(fstr); } catch (e) { return null; }
+        if (factorPoly(ast, v)) return null; /* the core factoriser handles it */
+        var p = toPoly(ast); if (!p) return null;
+        var deg = polyDegree(p);
+        var expr = polyToHTML(p, v);
+        /* difference of squares: a x^2 - c with a, c perfect squares */
+        if (deg === 2 && Math.abs(p[1] || 0) < 1e-12 && (p[0] || 0) < 0) {
+          var A = Math.sqrt(p[2]), C = Math.sqrt(-(p[0] || 0));
+          if (XisInt(A) && XisInt(C) && A > 0 && C > 0) {
+            var f1 = "(" + (A === 1 ? "" : fmtNum(A)) + v + " − " + fmtNum(C) + ")", f2 = "(" + (A === 1 ? "" : fmtNum(A)) + v + " + " + fmtNum(C) + ")";
+            var chkP = {}; chkP[2] = A * A; chkP[0] = -C * C;
+            if (!Xclose(chkP[2], p[2]) || !Xclose(chkP[0], p[0])) return null;
+            return Xmk("Difference of Two Squares", "a² − b² always factorises as (a − b)(a + b). Recognise the two squares and write the pair of brackets.", expr + " = " + f1 + f2, [
+              Xst("Recognise the two squares", expr + " is " + (A === 1 ? "" : "(" + fmtNum(A) + v + ")²") + (A === 1 ? v + "²" : "") + " − " + fmtNum(C) + "² — a square minus a square:", expr + " = (" + (A === 1 ? v : fmtNum(A) + v) + ")² − " + fmtNum(C) + "²"),
+              Xst("Apply a² − b² = (a − b)(a + b)", "", expr + " = " + f1 + f2),
+              Xst("Check by expanding", f1 + f2 + " — the middle terms cancel, leaving " + expr + " ✓", ""),
+              Xst("State the final answer", "", expr + " = " + f1 + f2)
+            ]);
+          }
+        }
+        /* common factor */
+        var degs = Object.keys(p).map(Number).filter(function (d) { return Math.abs(p[d]) > 1e-12; });
+        var allInt = degs.every(function (d) { return XisInt(p[d]); });
+        if (allInt && degs.length > 1) {
+          var g = 0; degs.forEach(function (d) { g = Xgcd(g, Math.abs(Math.round(p[d]))); });
+          var minDeg = Math.min.apply(null, degs);
+          if (g > 1 || minDeg > 0) {
+            var inner = {}; degs.forEach(function (d) { inner[d - minDeg] = p[d] / g; });
+            var factorStr = (g > 1 ? fmtNum(g) : "") + (minDeg > 0 ? v + (minDeg > 1 ? sup(minDeg) : "") : "");
+            var factored = factorStr + "(" + polyToHTML(inner, v) + ")";
+            var okChk = degs.every(function (d) { return Xclose((inner[d - minDeg] || 0) * g, p[d]); });
+            if (!okChk) return null; /* verified coefficient-by-coefficient */
+            return Xmk("Factorising — Common Factor", "Find the largest factor shared by EVERY term — numbers (their HCF) and the lowest power of the variable — and take it outside the bracket.", expr + " = " + factored, [
+              Xst("Look at every term", "Terms: " + degs.map(function (d) { return fmtNum(p[d]) + (d ? v + (d > 1 ? sup(d) : "") : ""); }).join(", ") + ". The HCF of the coefficients is " + g + (minDeg > 0 ? " and every term contains at least " + v + (minDeg > 1 ? sup(minDeg) : "") : "") + ":", "Common factor = " + factorStr),
+              Xst("Divide each term by the common factor", "What remains goes inside the bracket:", expr + " = " + factored),
+              Xst("Check by expanding", factored + " multiplies back to " + expr + " ✓", ""),
+              Xst("State the final answer", "", expr + " = " + factored)
+            ]);
+          }
+        }
+        return null;
+      }
+      function solveCompleteSquare(t, low, v) {
+        if (!/complete (?:the )?square|completed square|vertex form/.test(low)) return null;
+        var exprStr = cleanExpr(t.replace(/.*?(?:complete (?:the )?square(?: of)?|completed square form(?: of)?|vertex form(?: of)?)\s*/i, ""));
+        var ast; try { ast = parseExpression(exprStr); } catch (e) { return null; }
+        var p = toPoly(ast); if (!p || polyDegree(p) !== 2) return null;
+        var a = p[2], b = p[1] || 0, c = p[0] || 0;
+        var pp = b / (2 * a), q = c - b * b / (4 * a);
+        function expandCheck(x) { return a * Math.pow(x + pp, 2) + q; }
+        function origVal(x) { return a * x * x + b * x + c; }
+        if (!Xclose(expandCheck(2), origVal(2), 1e-7) || !Xclose(expandCheck(-3), origVal(-3), 1e-7)) return null; /* verified at two points */
+        var expr = polyToHTML(p, v);
+        var inner = "(" + v + (pp < 0 ? " − " + fmtNum(-pp) : " + " + fmtNum(pp)) + ")" + sup(2);
+        var ans = (a === 1 ? "" : fmtNum(a)) + inner + (q < 0 ? " − " + fmtNum(-q) : q > 0 ? " + " + fmtNum(q) : "");
+        if (a !== 1) ans = fmtNum(a) + inner + (q < 0 ? " − " + fmtNum(-q) : q > 0 ? " + " + fmtNum(q) : "");
+        return Xmk("Completing the Square", "Rewrite the quadratic as a(x + p)² + q: halve the x-coefficient for p, then adjust the constant so the value is unchanged. This form shows the turning point (−p, q) at a glance.", expr + " = " + ans, [
+          Xst("Read off a, b and c", "", "a = " + fmtNum(a) + ", &nbsp; b = " + fmtNum(b) + ", &nbsp; c = " + fmtNum(c)),
+          Xst("Halve the x-coefficient", "p = b / (2a) = " + fmtNum(b) + " / " + fmtNum(2 * a) + " = " + fmtNum(pp) + " — this goes inside the bracket:", inner),
+          Xst("Fix the constant", "Expanding " + (a === 1 ? "" : fmtNum(a)) + inner + " gives an extra " + fmtNum(a * pp * pp) + "; the constant must still come to " + fmtNum(c) + ", so q = " + fmtNum(c) + " − " + fmtNum(a * pp * pp) + " = " + fmtNum(q) + ":", "q = " + fmtNum(q)),
+          Xst("Check by expanding", ans + " expands back to " + expr + " ✓", ""),
+          Xst("State the final answer", "The turning point is at (" + fmtNum(-pp) + ", " + fmtNum(q) + "):", expr + " = " + ans)
+        ]);
+      }
+
+      /* ----- sequences & variation ----- */
+      function seqList(s) {
+        var m = s.match(/-?\d+(?:\.\d+)?(?:\s*,\s*-?\d+(?:\.\d+)?){2,}/);
+        if (!m) return null;
+        return m[0].split(",").map(function (x) { return parseFloat(x); });
+      }
+      function solveSequence(t, low) {
+        var terms = seqList(t);
+        if (!terms || terms.length < 3) return null;
+        if (!/sequence|term|series|ap\b|gp\b|arithmetic|geometric/.test(low)) return null;
+        var diffs = [], ratios = [], i;
+        for (i = 1; i < terms.length; i++) { diffs.push(terms[i] - terms[i - 1]); ratios.push(terms[i] / terms[i - 1]); }
+        var isAP = diffs.every(function (d) { return Xclose(d, diffs[0], 1e-9); });
+        var isGP = !isAP && ratios.every(function (r) { return Xclose(r, ratios[0], 1e-9); }) && terms[0] !== 0;
+        var a = terms[0];
+        var nthM = low.match(/(?:find|what is|calculate)?\s*(?:the\s*)?(\d+)(?:st|nd|rd|th)\s+term/);
+        var sumM = low.match(/(?:sum of (?:the )?first|first)\s+(\d+)\s+terms/) || low.match(/sum of (?:the )?(\d+)\s+terms/);
+        var listStr = terms.join(", ");
+        if (isAP) {
+          var d = diffs[0];
+          if (sumM) {
+            var nS = +sumM[1], S = 0, k;
+            for (k = 0; k < nS; k++) S += a + k * d; /* brute-force sum */
+            var Sf = nS / 2 * (2 * a + (nS - 1) * d);
+            if (!Xclose(S, Sf, 1e-7)) return null;
+            return Xmk("Arithmetic Series — Sum of n Terms", "Sₙ = n/2 × (2a + (n−1)d): the number of terms times the average of the first and last terms.", "S" + nS + " = " + fmtNum(S), [
+              Xst("Identify a and d", "First term a = " + fmtNum(a) + "; common difference d = " + fmtNum(d) + " (each term adds " + fmtNum(d) + "):", listStr + ", …"),
+              Xst("Substitute into Sₙ = n/2 (2a + (n−1)d)", "n = " + nS + ":", "S = " + nS + "/2 × (2×" + fmtNum(a) + " + " + (nS - 1) + "×" + fmtNum(d) + ")"),
+              Xst("Calculate", "", "S" + nS + " = " + fmtNum(S)),
+              Xst("State the final answer", "", "Sum of the first " + nS + " terms = " + fmtNum(S))
+            ]);
+          }
+          if (nthM) {
+            var nT = +nthM[1], val = a + (nT - 1) * d;
+            var chkT = a; for (var q2 = 1; q2 < nT; q2++) chkT += d;
+            if (!Xclose(chkT, val)) return null;
+            return Xmk("Arithmetic Progression — nth Term", "uₙ = a + (n−1)d: start from the first term and add the common difference (n−1) times.", "u" + nT + " = " + fmtNum(val), [
+              Xst("Identify a and d", "a = " + fmtNum(a) + ", d = " + fmtNum(d) + ":", listStr + ", …"),
+              Xst("Substitute into uₙ = a + (n−1)d", "n = " + nT + ": u = " + fmtNum(a) + " + " + (nT - 1) + " × " + fmtNum(d), ""),
+              Xst("Calculate", "", "u" + nT + " = " + fmtNum(val)),
+              Xst("State the final answer", "", "The " + nT + "th term is " + fmtNum(val))
+            ]);
+          }
+          var formula = fmtNum(a) + " + (n − 1)(" + fmtNum(d) + ")";
+          var regen = [0, 1, 2].map(function (k) { return a + k * d; });
+          if (!regen.every(function (val2, idx) { return Xclose(val2, terms[idx]); })) return null;
+          return Xmk("Arithmetic Progression — nth Term Formula", "In an AP every term is the first term plus (position − 1) copies of the common difference.", "uₙ = " + fmtNum(a + -d) + " + " + fmtNum(d) + "n", [
+            Xst("Find the common difference", "Subtract consecutive terms: " + terms.slice(1).map(function (x, idx) { return fmtNum(x) + " − " + fmtNum(terms[idx]) + " = " + fmtNum(d); }).join(" · ") + " — constant, so it is an AP with d = " + fmtNum(d) + ":", "d = " + fmtNum(d)),
+            Xst("Build uₙ = a + (n−1)d", "a = " + fmtNum(a) + ":", "uₙ = " + formula),
+            Xst("Simplify", "", "uₙ = " + fmtNum(a - d) + " + " + fmtNum(d) + "n"),
+            Xst("Check against the given terms", "n = 1, 2, 3 give " + regen.join(", ") + " ✓ — matching " + listStr, ""),
+            Xst("State the final answer", "", "uₙ = " + fmtNum(a - d) + " + " + fmtNum(d) + "n")
+          ]);
+        }
+        if (isGP) {
+          var r = ratios[0];
+          if (sumM) {
+            var nG = +sumM[1], SG = 0, pow = 1;
+            for (var k2 = 0; k2 < nG; k2++) { SG += a * pow; pow *= r; }
+            var SGf = Math.abs(r - 1) < 1e-12 ? a * nG : a * (Math.pow(r, nG) - 1) / (r - 1);
+            if (!Xclose(SG, SGf, 1e-6)) return null;
+            return Xmk("Geometric Series — Sum of n Terms", "Sₙ = a(rⁿ − 1)/(r − 1): each term is the previous one multiplied by the common ratio r.", "S" + nG + " = " + fmtNum(SG), [
+              Xst("Identify a and r", "a = " + fmtNum(a) + "; common ratio r = " + fmtNum(r) + " (each term multiplies by " + fmtNum(r) + "):", listStr + ", …"),
+              Xst("Substitute into Sₙ = a(rⁿ − 1)/(r − 1)", "n = " + nG + ":", "S = " + fmtNum(a) + "(" + fmtNum(r) + sup(nG) + " − 1)/(" + fmtNum(r) + " − 1)"),
+              Xst("Calculate", "", "S" + nG + " = " + fmtNum(SG)),
+              Xst("State the final answer", "", "Sum of the first " + nG + " terms = " + fmtNum(SG))
+            ]);
+          }
+          if (nthM) {
+            var nG2 = +nthM[1], valG = a * Math.pow(r, nG2 - 1);
+            var chkG = a; for (var q3 = 1; q3 < nG2; q3++) chkG *= r;
+            if (!Xclose(chkG, valG, 1e-7)) return null;
+            return Xmk("Geometric Progression — nth Term", "uₙ = a·rⁿ⁻¹: start from the first term and multiply by the common ratio (n−1) times.", "u" + nG2 + " = " + fmtNum(valG), [
+              Xst("Identify a and r", "a = " + fmtNum(a) + ", r = " + fmtNum(r) + ":", listStr + ", …"),
+              Xst("Substitute into uₙ = a·rⁿ⁻¹", "n = " + nG2 + ": u = " + fmtNum(a) + " × " + fmtNum(r) + sup(nG2 - 1), ""),
+              Xst("Calculate", "", "u" + nG2 + " = " + fmtNum(valG)),
+              Xst("State the final answer", "", "The " + nG2 + "th term is " + fmtNum(valG))
+            ]);
+          }
+          var regenG = [0, 1, 2].map(function (k) { return a * Math.pow(r, k); });
+          if (!regenG.every(function (val3, idx) { return Xclose(val3, terms[idx]); })) return null;
+          return Xmk("Geometric Progression — nth Term Formula", "In a GP every term is the first term multiplied by the common ratio raised to (position − 1).", "uₙ = " + fmtNum(a) + " × " + fmtNum(r) + sup("n−1"), [
+            Xst("Find the common ratio", "Divide consecutive terms: " + terms.slice(1).map(function (x, idx) { return fmtNum(x) + " ÷ " + fmtNum(terms[idx]) + " = " + fmtNum(r); }).join(" · ") + " — constant, so it is a GP with r = " + fmtNum(r) + ":", "r = " + fmtNum(r)),
+            Xst("Build uₙ = a·rⁿ⁻¹", "a = " + fmtNum(a) + ":", "uₙ = " + fmtNum(a) + " × " + fmtNum(r) + sup("n−1")),
+            Xst("Check against the given terms", "n = 1, 2, 3 give " + regenG.map(fmtNum).join(", ") + " ✓ — matching " + listStr, ""),
+            Xst("State the final answer", "", "uₙ = " + fmtNum(a) + " × " + fmtNum(r) + sup("n−1"))
+          ]);
+        }
+        return null;
+      }
+      function solveVariation(low) {
+        var givens = [], m, re = /y\s*=\s*(\d+(?:\.\d+)?)\s*when\s*x\s*=\s*(\d+(?:\.\d+)?)/g;
+        while ((m = re.exec(low))) givens.push({ y: +m[1], x: +m[2] });
+        if (!givens.length) return null;
+        var g = givens[0], target = null, tm2, reT = /when\s*x\s*=\s*(\d+(?:\.\d+)?)/g, lastX = null;
+        while ((tm2 = reT.exec(low))) lastX = +tm2[1];
+        if (lastX === null || lastX === g.x) return null;
+        target = { x: lastX };
+        if (/inverse/.test(low)) {
+          var kI = g.x * g.y, yI = kI / target.x;
+          if (!Xclose(yI * target.x, kI)) return null;
+          return Xmk("Inverse Variation", "When y varies inversely as x, the product x·y stays constant: x·y = k. Find k from the given pair, then use it for the new x.", "y = " + fmtNum(yI) + " when x = " + fmtNum(target.x), [
+            Xst("Find the constant k = x·y", "Using y = " + fmtNum(g.y) + " when x = " + fmtNum(g.x) + ":", "k = " + fmtNum(g.x) + " × " + fmtNum(g.y) + " = " + fmtNum(kI)),
+            Xst("Use k for the new x", "y = k / x with x = " + fmtNum(target.x) + ":", "y = " + fmtNum(kI) + " / " + fmtNum(target.x) + " = " + fmtNum(yI)),
+            Xst("Check", fmtNum(target.x) + " × " + fmtNum(yI) + " = " + fmtNum(kI) + " = k ✓", ""),
+            Xst("State the final answer", "", "y = " + fmtNum(yI))
+          ]);
+        }
+        if (/direct/.test(low) || /varies/.test(low)) {
+          var kD = g.y / g.x, yD = kD * target.x;
+          if (!Xclose(yD / target.x, kD)) return null;
+          return Xmk("Direct Variation", "When y varies directly as x, the ratio y/x stays constant: y = kx. Find k from the given pair, then use it for the new x.", "y = " + fmtNum(yD) + " when x = " + fmtNum(target.x), [
+            Xst("Find the constant k = y/x", "Using y = " + fmtNum(g.y) + " when x = " + fmtNum(g.x) + ":", "k = " + fmtNum(g.y) + " / " + fmtNum(g.x) + " = " + fmtNum(kD)),
+            Xst("Use y = kx for the new x", "x = " + fmtNum(target.x) + ":", "y = " + fmtNum(kD) + " × " + fmtNum(target.x) + " = " + fmtNum(yD)),
+            Xst("Check", fmtNum(yD) + " / " + fmtNum(target.x) + " = " + fmtNum(kD) + " = k ✓", ""),
+            Xst("State the final answer", "", "y = " + fmtNum(yD))
+          ]);
+        }
+        return null;
+      }
+
+      /* ----- functions: evaluate, composite, inverse ----- */
+      function solveFunctions(t, low) {
+        var fDef = t.match(/f\s*\(\s*x\s*\)\s*=\s*(.+?)(?=\s+and\s+g\s*\(|\s*,\s*|\s*;\s*|\s+find\s+|$)/i);
+        var gDef = t.match(/g\s*\(\s*x\s*\)\s*=\s*(.+?)(?=\s+and\s+f\s*\(|\s*,\s*|\s*;\s*|\s+find\s+|$)/i);
+        if (/inverse/.test(low) && fDef) {
+          var astI; try { astI = parseExpression(cleanExpr(fDef[1])); } catch (e) { return null; }
+          var pI = toPoly(astI); if (!pI || polyDegree(pI) !== 1) return null;
+          var mm2 = pI[1], cc = pI[0] || 0;
+          var invStr = "(x" + (cc === 0 ? "" : cc > 0 ? " − " + fmtNum(cc) : " + " + fmtNum(-cc)) + ")" + (mm2 === 1 ? "" : " / " + fmtNum(mm2));
+          var testX = 3, back = mm2 * ((testX - cc) / mm2) + cc;
+          if (!Xclose(back, testX)) return null; /* verified: f(f^-1(x)) = x */
+          return Xmk("Inverse Function", "Write y = f(x), swap x and y, then solve for y — the inverse undoes what f does.", "f⁻¹(x) = " + invStr, [
+            Xst("Write y = f(x)", "", "y = " + polyToHTML(pI, "x")),
+            Xst("Swap x and y", "The inverse reflects the function in the line y = x:", "x = " + polyToHTML(pI, "y")),
+            Xst("Solve for y", "Isolate y — undo the × " + fmtNum(mm2) + " and the " + (cc >= 0 ? "+ " + fmtNum(cc) : "− " + fmtNum(-cc)) + " in reverse order:", "y = " + invStr),
+            Xst("Check: f(f⁻¹(3)) must give 3", "f⁻¹(3) = " + fmtNum((3 - cc) / mm2) + ", then f of that = " + fmtNum(back) + " ✓", ""),
+            Xst("State the final answer", "", "f⁻¹(x) = " + invStr)
+          ]);
+        }
+        if (fDef && gDef && /(fg|gf)\s*\(/.test(low)) {
+          var compM = low.match(/(fg|gf)\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/);
+          if (!compM) return null;
+          var innerDef = compM[1] === "fg" ? gDef : fDef, outerDef = compM[1] === "fg" ? fDef : gDef;
+          var innerName = compM[1] === "fg" ? "g" : "f", outerName = compM[1] === "fg" ? "f" : "g";
+          var astIn, astOut;
+          try { astIn = parseExpression(cleanExpr(innerDef[1])); astOut = parseExpression(cleanExpr(outerDef[1])); } catch (e2) { return null; }
+          var xv3 = +compM[2], innerVal = evalAST(astIn, xv3), outerVal = evalAST(astOut, innerVal);
+          if (!isFinite(innerVal) || !isFinite(outerVal)) return null;
+          var direct = evalAST(astOut, evalAST(astIn, xv3));
+          if (!Xclose(direct, outerVal)) return null; /* verified by direct re-evaluation */
+          return Xmk("Composite Function", compM[1] + "(x) means " + outerName + "(" + innerName + "(x)) — work from the inside out: apply the inner function first, then feed its answer into the outer one.", compM[1] + "(" + fmtNum(xv3) + ") = " + fmtNum(outerVal), [
+            Xst("Apply the inner function " + innerName + " first", innerName + "(" + fmtNum(xv3) + ") using " + innerName + "(x) = " + exprHTML(astIn, "x") + ":", innerName + "(" + fmtNum(xv3) + ") = " + fmtNum(innerVal)),
+            Xst("Feed the result into " + outerName, outerName + "(" + fmtNum(innerVal) + ") using " + outerName + "(x) = " + exprHTML(astOut, "x") + ":", outerName + "(" + fmtNum(innerVal) + ") = " + fmtNum(outerVal)),
+            Xst("State the final answer", "", compM[1] + "(" + fmtNum(xv3) + ") = " + fmtNum(outerVal))
+          ]);
+        }
+        if (fDef) {
+          var evM = t.match(/f\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/i);
+          if (evM && !/f\s*\(\s*x\s*\)/.test(evM[0])) {
+            var astE; try { astE = parseExpression(cleanExpr(fDef[1])); } catch (e3) { return null; }
+            if (!hasVar(astE)) return null;
+            var xv4 = +evM[1], valE = evalAST(astE, xv4);
+            if (!isFinite(valE)) return null;
+            var pE = toPoly(astE), valP = null;
+            if (pE) { valP = 0; for (var dd2 in pE) valP += pE[dd2] * Math.pow(xv4, +dd2); }
+            if (valP !== null && !Xclose(valP, valE)) return null; /* verified against the polynomial form */
+            return Xmk("Evaluating a Function", "f(a) means: replace every x in the rule for f with the number a, then calculate.", "f(" + fmtNum(xv4) + ") = " + fmtNum(valE), [
+              Xst("Write the rule", "", "f(x) = " + exprHTML(astE, "x")),
+              Xst("Substitute x = " + fmtNum(xv4), "Every x becomes " + fmtNum(xv4) + ":", "f(" + fmtNum(xv4) + ") = " + fmtNum(valE)),
+              Xst("State the final answer", "", "f(" + fmtNum(xv4) + ") = " + fmtNum(valE))
+            ]);
+          }
+        }
+        return null;
+      }
+
+      /* ----- calculus extras: derivative at a point, turning points ----- */
+      function solveCalculusExtra(t, low, v) {
+        var atM = low.match(/at\s*x\s*=\s*(-?\d+(?:\.\d+)?)/);
+        if ((/differentiate|derivative|dy\/dx|gradient/.test(low)) && atM) {
+          var exprStr = cleanExpr(t.replace(/at\s*x\s*=\s*-?\d+(?:\.\d+)?/i, "").replace(/^(find|calculate)?\s*(the\s*)?(gradient of|derivative of|differentiate|dy\/dx of)\s*/i, "").replace(/.*?(?:differentiate|derivative of|gradient of|dy\/dx of)\s*/i, "").replace(/^y\s*=\s*/i, ""));
+          var ast; try { ast = parseExpression(exprStr); } catch (e) { return null; }
+          var p = toPoly(ast); if (!p || polyDegree(p) < 1) return null;
+          var xv = +atM[1], dp = {};
+          for (var d in p) if (+d > 0) dp[+d - 1] = (dp[+d - 1] || 0) + p[d] * (+d);
+          function pv(pp, x) { var s = 0; for (var dd in pp) s += pp[dd] * Math.pow(x, +dd); return s; }
+          var valD = pv(dp, xv);
+          var h = 1e-4, numeric = (evalAST(ast, xv + h) - evalAST(ast, xv - h)) / (2 * h);
+          if (!Xclose(numeric, valD, 1e-2)) return null; /* verified by numerical differentiation */
+          return Xmk("Derivative at a Point (Gradient)", "Differentiate first with the Power Rule, then substitute the x-value — the answer is the gradient of the curve at that point.", "Gradient at x = " + fmtNum(xv) + " is " + fmtNum(valD), [
+            Xst("Differentiate the function", "Power Rule on each term:", "f(x) = " + exprHTML(ast, v) + " &nbsp;⇒&nbsp; f ′(x) = " + polyToHTML(dp, v)),
+            Xst("Substitute x = " + fmtNum(xv), "", "f ′(" + fmtNum(xv) + ") = " + fmtNum(valD)),
+            Xst("State the final answer", "This is the slope of the tangent to the curve at x = " + fmtNum(xv) + ":", fmtNum(valD))
+          ]);
+        }
+        if (/turning point|stationary|maximum|minimum/.test(low)) {
+          var exprStr2 = cleanExpr(t.replace(/.*?(?:of|for)\s+(?:y\s*=\s*)?/i, "").replace(/^y\s*=\s*/i, ""));
+          var ast2; try { ast2 = parseExpression(exprStr2); } catch (e2) { return null; }
+          var p2 = toPoly(ast2); if (!p2 || polyDegree(p2) !== 2) return null;
+          var a = p2[2], b = p2[1] || 0, c = p2[0] || 0;
+          var xs = -b / (2 * a), ys = a * xs * xs + b * xs + c;
+          if (!Xclose(2 * a * xs + b, 0)) return null; /* verified: derivative is zero there */
+          var isMin = a > 0;
+          return Xmk("Turning Point (Stationary Point)", "At a turning point the gradient is zero: differentiate, set dy/dx = 0, solve for x, then find y. The sign of the x² coefficient tells the nature — positive opens upward (minimum), negative opens downward (maximum).", "(" + fmtNum(xs) + ", " + fmtNum(ys) + ") — a " + (isMin ? "minimum" : "maximum"), [
+            Xst("Differentiate", "y = " + polyToHTML(p2, v) + ":", "dy/d" + v + " = " + polyToHTML({ 1: 2 * a, 0: b }, v)),
+            Xst("Set the derivative to zero", "Turning points happen where the gradient is 0:", fmtNum(2 * a) + v + (b < 0 ? " − " + fmtNum(-b) : " + " + fmtNum(b)) + " = 0 &nbsp;⇒&nbsp; " + v + " = " + fmtNum(xs)),
+            Xst("Find the y-value", "Substitute " + v + " = " + fmtNum(xs) + " into the original equation:", "y = " + fmtNum(ys)),
+            Xst("Decide the nature", "The coefficient of " + v + "² is " + fmtNum(a) + (isMin ? " > 0, so the parabola opens upward — the point is a MINIMUM." : " < 0, so the parabola opens downward — the point is a MAXIMUM."), isMin ? "Minimum" : "Maximum"),
+            Xst("State the final answer", "", "(" + fmtNum(xs) + ", " + fmtNum(ys) + ") — " + (isMin ? "minimum" : "maximum") + " point")
+          ]);
+        }
+        return null;
+      }
+
+      /* ----- geometry: area, perimeter, volume ----- */
+      function Xunit(low) { var m = low.match(/\b(cm|mm|km|m)\b/); return m ? m[1] : null; }
+      function Xdim(low, names) {
+        for (var i = 0; i < names.length; i++) {
+          var m = low.match(new RegExp(names[i] + "\\s*(?:=|is|of)?\\s*(\\d+(?:\\.\\d+)?)"));
+          if (m) return +m[1];
+        }
+        return null;
+      }
+      function solveGeometry(t, low) {
+        var unit = Xunit(low), u2 = unit ? " " + unit + "²" : " square units", u1 = unit ? " " + unit : " units", u3 = unit ? " " + unit + "³" : " cubic units";
+        var wantVol = /volume|capacity/.test(low), wantSA = /surface area/.test(low);
+        var wantArea = /\barea\b/.test(low), wantPer = /perimeter|circumference/.test(low);
+        var m;
+        if (/circle/.test(low) && (wantArea || wantPer)) {
+          var r = Xdim(low, ["radius", "r"]);
+          var dm = Xdim(low, ["diameter", "d"]);
+          if (r === null && dm !== null) r = dm / 2;
+          if (r === null) return null;
+          var stepsC = [Xst("Write down the radius", dm !== null && Xdim(low, ["radius", "r"]) === null ? "Diameter = " + fmtNum(dm) + ", so radius = diameter ÷ 2 = " + fmtNum(r) + "." : "Radius r = " + fmtNum(r) + ".", "r = " + fmtNum(r))];
+          if (wantArea) {
+            var area = Math.PI * r * r;
+            stepsC.push(Xst("Method — area of a circle", "A = πr². Use π = 3.142 (or the π button):", "A = π × " + fmtNum(r) + "²"));
+            stepsC.push(Xst("Calculate", "π × " + fmtNum(r * r) + " = " + fmtNum(area) + ":", "A = " + fmtNum(area) + u2));
+            stepsC.push(Xst("State the final answer", "", "Area = " + fmtNum(area) + u2));
+            if (!Xclose(area / (r * r), Math.PI, 1e-9)) return null;
+            return Xmk("Area of a Circle", "A = πr² — square the radius first, then multiply by π.", "Area = " + fmtNum(area) + u2, stepsC);
+          }
+          var circ = 2 * Math.PI * r;
+          stepsC.push(Xst("Method — circumference of a circle", "C = 2πr — the distance all the way around:", "C = 2 × π × " + fmtNum(r)));
+          stepsC.push(Xst("Calculate", "", "C = " + fmtNum(circ) + u1));
+          stepsC.push(Xst("State the final answer", "", "Circumference = " + fmtNum(circ) + u1));
+          if (!Xclose(circ / (2 * r), Math.PI, 1e-9)) return null;
+          return Xmk("Circumference of a Circle", "C = 2πr — twice π times the radius.", "Circumference = " + fmtNum(circ) + u1, stepsC);
+        }
+        if (/rectangle/.test(low) && (wantArea || wantPer)) {
+          var L = Xdim(low, ["length", "l"]), W = Xdim(low, ["width", "breadth", "w"]);
+          if (L === null || W === null) return null;
+          if (wantArea) { var aR = L * W; if (!Xclose(aR / W, L)) return null;
+            return Xmk("Area of a Rectangle", "A = length × width — count how many unit squares fit inside.", "Area = " + fmtNum(aR) + u2, [
+              Xst("Write down the sides", "", "Length = " + fmtNum(L) + u1 + ", &nbsp; Width = " + fmtNum(W) + u1),
+              Xst("Multiply length by width", "", "A = " + fmtNum(L) + " × " + fmtNum(W) + " = " + fmtNum(aR) + u2),
+              Xst("State the final answer", "", "Area = " + fmtNum(aR) + u2) ]); }
+          var pR = 2 * (L + W); if (!Xclose(pR / 2 - W, L)) return null;
+          return Xmk("Perimeter of a Rectangle", "P = 2(length + width) — add one length and one width, then double it for the other two sides.", "Perimeter = " + fmtNum(pR) + u1, [
+            Xst("Write down the sides", "", "Length = " + fmtNum(L) + u1 + ", &nbsp; Width = " + fmtNum(W) + u1),
+            Xst("Add and double", "", "P = 2 × (" + fmtNum(L) + " + " + fmtNum(W) + ") = 2 × " + fmtNum(L + W) + " = " + fmtNum(pR) + u1),
+            Xst("State the final answer", "", "Perimeter = " + fmtNum(pR) + u1) ]);
+        }
+        if (/square/.test(low) && !/square root/.test(low) && (wantArea || wantPer)) {
+          var sd = Xdim(low, ["side", "s", "length"]);
+          if (sd === null) return null;
+          if (wantArea) { var aS = sd * sd;
+            return Xmk("Area of a Square", "A = side² — a square's length and width are equal.", "Area = " + fmtNum(aS) + u2, [
+              Xst("Square the side", "", "A = " + fmtNum(sd) + "² = " + fmtNum(sd) + " × " + fmtNum(sd) + " = " + fmtNum(aS) + u2),
+              Xst("State the final answer", "", "Area = " + fmtNum(aS) + u2) ]); }
+          var pS = 4 * sd;
+          return Xmk("Perimeter of a Square", "P = 4 × side — all four sides are equal.", "Perimeter = " + fmtNum(pS) + u1, [
+            Xst("Multiply the side by 4", "", "P = 4 × " + fmtNum(sd) + " = " + fmtNum(pS) + u1),
+            Xst("State the final answer", "", "Perimeter = " + fmtNum(pS) + u1) ]);
+        }
+        if (/triangle/.test(low) && wantArea) {
+          var bs = Xdim(low, ["base", "b"]), ht = Xdim(low, ["height", "h", "perpendicular height"]);
+          if (bs === null || ht === null) return null;
+          var aT = 0.5 * bs * ht; if (!Xclose(aT * 2, bs * ht)) return null;
+          return Xmk("Area of a Triangle", "A = ½ × base × perpendicular height — a triangle is exactly half of the rectangle built on the same base and height.", "Area = " + fmtNum(aT) + u2, [
+            Xst("Write down base and height", "The height must be perpendicular to the base:", "Base = " + fmtNum(bs) + u1 + ", &nbsp; Height = " + fmtNum(ht) + u1),
+            Xst("Substitute into A = ½bh", "", "A = ½ × " + fmtNum(bs) + " × " + fmtNum(ht) + " = " + fmtNum(aT) + u2),
+            Xst("State the final answer", "", "Area = " + fmtNum(aT) + u2) ]);
+        }
+        if (/triangle/.test(low) && wantPer) {
+          var sm = low.match(/sides?\s*(?:are|:|of)?\s*(\d+(?:\.\d+)?)\s*(?:,|and)\s*(\d+(?:\.\d+)?)\s*(?:,|and)\s*(\d+(?:\.\d+)?)/);
+          if (!sm) return null;
+          var s1 = +sm[1], s2 = +sm[2], s3 = +sm[3], pT = s1 + s2 + s3;
+          return Xmk("Perimeter of a Triangle", "The perimeter is the total distance around — simply add all three sides.", "Perimeter = " + fmtNum(pT) + u1, [
+            Xst("Add the three sides", "", "P = " + fmtNum(s1) + " + " + fmtNum(s2) + " + " + fmtNum(s3) + " = " + fmtNum(pT) + u1),
+            Xst("State the final answer", "", "Perimeter = " + fmtNum(pT) + u1) ]);
+        }
+        if (/parallelogram/.test(low) && wantArea) {
+          var bp = Xdim(low, ["base", "b"]), hp = Xdim(low, ["height", "h"]);
+          if (bp === null || hp === null) return null;
+          var aP = bp * hp;
+          return Xmk("Area of a Parallelogram", "A = base × perpendicular height — cutting the triangle off one end and moving it to the other makes a rectangle of the same base and height.", "Area = " + fmtNum(aP) + u2, [
+            Xst("Multiply base by perpendicular height", "", "A = " + fmtNum(bp) + " × " + fmtNum(hp) + " = " + fmtNum(aP) + u2),
+            Xst("State the final answer", "", "Area = " + fmtNum(aP) + u2) ]);
+        }
+        if (/(trapezium|trapezoid)/.test(low) && wantArea) {
+          var ta = Xdim(low, ["a", "first parallel side", "top"]), tb = Xdim(low, ["b", "second parallel side", "bottom"]), th = Xdim(low, ["height", "h", "distance"]);
+          if (ta === null || tb === null || th === null) {
+            var allNums = low.match(/\d+(?:\.\d+)?/g);
+            if (allNums && allNums.length >= 3) { ta = +allNums[0]; tb = +allNums[1]; th = +allNums[2]; } else return null;
+          }
+          var aTr = 0.5 * (ta + tb) * th; if (!Xclose(aTr * 2 / th, ta + tb)) return null;
+          return Xmk("Area of a Trapezium", "A = ½(a + b)h — average the two parallel sides, then multiply by the distance between them.", "Area = " + fmtNum(aTr) + u2, [
+            Xst("Write down the parallel sides and height", "", "a = " + fmtNum(ta) + ", &nbsp; b = " + fmtNum(tb) + ", &nbsp; h = " + fmtNum(th)),
+            Xst("Substitute into A = ½(a + b)h", "", "A = ½ × (" + fmtNum(ta) + " + " + fmtNum(tb) + ") × " + fmtNum(th) + " = " + fmtNum(aTr) + u2),
+            Xst("State the final answer", "", "Area = " + fmtNum(aTr) + u2) ]);
+        }
+        /* volumes & surface areas */
+        if (/cube/.test(low) && (wantVol || wantSA)) {
+          var sc = Xdim(low, ["side", "edge", "s", "length"]);
+          if (sc === null) return null;
+          if (wantSA) { var saC = 6 * sc * sc;
+            return Xmk("Surface Area of a Cube", "A cube has 6 identical square faces: SA = 6 × side².", "Surface area = " + fmtNum(saC) + u2, [
+              Xst("Square the side, then multiply by 6 faces", "", "SA = 6 × " + fmtNum(sc) + "² = 6 × " + fmtNum(sc * sc) + " = " + fmtNum(saC) + u2),
+              Xst("State the final answer", "", "Surface area = " + fmtNum(saC) + u2) ]); }
+          var vC = sc * sc * sc;
+          return Xmk("Volume of a Cube", "V = side³ — the side multiplied by itself three times.", "Volume = " + fmtNum(vC) + u3, [
+            Xst("Cube the side", "", "V = " + fmtNum(sc) + "³ = " + fmtNum(vC) + u3),
+            Xst("State the final answer", "", "Volume = " + fmtNum(vC) + u3) ]);
+        }
+        if (/cuboid|rectangular box|box/.test(low) && (wantVol || wantSA)) {
+          var cl = Xdim(low, ["length", "l"]), cw = Xdim(low, ["width", "breadth", "w"]), ch = Xdim(low, ["height", "h", "depth"]);
+          if (cl === null || cw === null || ch === null) return null;
+          if (wantSA) { var saB = 2 * (cl * cw + cw * ch + cl * ch);
+            return Xmk("Surface Area of a Cuboid", "Three pairs of opposite faces: SA = 2(lw + wh + lh).", "Surface area = " + fmtNum(saB) + u2, [
+              Xst("Work out the three face areas", "", "lw = " + fmtNum(cl * cw) + ", &nbsp; wh = " + fmtNum(cw * ch) + ", &nbsp; lh = " + fmtNum(cl * ch)),
+              Xst("Add and double", "", "SA = 2 × (" + fmtNum(cl * cw) + " + " + fmtNum(cw * ch) + " + " + fmtNum(cl * ch) + ") = " + fmtNum(saB) + u2),
+              Xst("State the final answer", "", "Surface area = " + fmtNum(saB) + u2) ]); }
+          var vB = cl * cw * ch; if (!Xclose(vB / (cl * cw), ch)) return null;
+          return Xmk("Volume of a Cuboid", "V = length × width × height.", "Volume = " + fmtNum(vB) + u3, [
+            Xst("Multiply the three dimensions", "", "V = " + fmtNum(cl) + " × " + fmtNum(cw) + " × " + fmtNum(ch) + " = " + fmtNum(vB) + u3),
+            Xst("State the final answer", "", "Volume = " + fmtNum(vB) + u3) ]);
+        }
+        if (/cylinder/.test(low) && (wantVol || wantSA)) {
+          var rc = Xdim(low, ["radius", "r"]), hc = Xdim(low, ["height", "h", "length"]);
+          if (rc === null || hc === null) return null;
+          if (wantSA) { var saCy = 2 * Math.PI * rc * (rc + hc);
+            return Xmk("Surface Area of a Cylinder", "Total surface area = two circles + the curved wall unrolled into a rectangle: SA = 2πr(r + h).", "Surface area = " + fmtNum(saCy) + u2, [
+              Xst("Substitute r = " + fmtNum(rc) + " and h = " + fmtNum(hc), "", "SA = 2π × " + fmtNum(rc) + " × (" + fmtNum(rc) + " + " + fmtNum(hc) + ")"),
+              Xst("Calculate", "", "SA = " + fmtNum(saCy) + u2),
+              Xst("State the final answer", "", "Surface area = " + fmtNum(saCy) + u2) ]); }
+          var vCy = Math.PI * rc * rc * hc; if (!Xclose(vCy / (rc * rc * hc), Math.PI, 1e-9)) return null;
+          return Xmk("Volume of a Cylinder", "V = πr²h — the area of the circular base times the height.", "Volume = " + fmtNum(vCy) + u3, [
+            Xst("Base area first", "πr² = π × " + fmtNum(rc) + "² = " + fmtNum(Math.PI * rc * rc) + u2, ""),
+            Xst("Multiply by the height", "", "V = " + fmtNum(Math.PI * rc * rc) + " × " + fmtNum(hc) + " = " + fmtNum(vCy) + u3),
+            Xst("State the final answer", "", "Volume = " + fmtNum(vCy) + u3) ]);
+        }
+        if (/sphere|ball/.test(low) && (wantVol || wantSA)) {
+          var rs = Xdim(low, ["radius", "r"]); if (rs === null) return null;
+          if (wantSA) { var saS = 4 * Math.PI * rs * rs;
+            return Xmk("Surface Area of a Sphere", "SA = 4πr² — exactly four times the area of its great circle.", "Surface area = " + fmtNum(saS) + u2, [
+              Xst("Substitute r = " + fmtNum(rs), "", "SA = 4π × " + fmtNum(rs) + "² = " + fmtNum(saS) + u2),
+              Xst("State the final answer", "", "Surface area = " + fmtNum(saS) + u2) ]); }
+          var vS = 4 / 3 * Math.PI * rs * rs * rs;
+          return Xmk("Volume of a Sphere", "V = (4/3)πr³.", "Volume = " + fmtNum(vS) + u3, [
+            Xst("Substitute r = " + fmtNum(rs), "", "V = (4/3) × π × " + fmtNum(rs) + "³"),
+            Xst("Calculate", "", "V = " + fmtNum(vS) + u3),
+            Xst("State the final answer", "", "Volume = " + fmtNum(vS) + u3) ]);
+        }
+        if (/cone/.test(low) && (wantVol || wantSA)) {
+          var rco = Xdim(low, ["radius", "r"]), hco = Xdim(low, ["height", "h"]);
+          if (rco === null || hco === null) return null;
+          var slant = Math.sqrt(rco * rco + hco * hco);
+          if (wantSA) { var saCo = Math.PI * rco * (rco + slant);
+            return Xmk("Surface Area of a Cone", "Total surface area = base circle + curved part: SA = πr(r + l), where l is the slant height from Pythagoras.", "Surface area = " + fmtNum(saCo) + u2, [
+              Xst("Find the slant height l", "l = √(r² + h²) = √(" + fmtNum(rco) + "² + " + fmtNum(hco) + "²) = " + fmtNum(slant) + ":", "l = " + fmtNum(slant)),
+              Xst("Substitute into SA = πr(r + l)", "", "SA = π × " + fmtNum(rco) + " × (" + fmtNum(rco) + " + " + fmtNum(slant) + ") = " + fmtNum(saCo) + u2),
+              Xst("State the final answer", "", "Surface area = " + fmtNum(saCo) + u2) ]); }
+          var vCo = Math.PI * rco * rco * hco / 3; if (!Xclose(vCo * 3 / (rco * rco * hco), Math.PI, 1e-9)) return null;
+          return Xmk("Volume of a Cone", "V = (1/3)πr²h — exactly one third of the cylinder with the same base and height.", "Volume = " + fmtNum(vCo) + u3, [
+            Xst("Substitute r = " + fmtNum(rco) + " and h = " + fmtNum(hco), "", "V = (1/3) × π × " + fmtNum(rco) + "² × " + fmtNum(hco)),
+            Xst("Calculate", "", "V = " + fmtNum(vCo) + u3),
+            Xst("State the final answer", "", "Volume = " + fmtNum(vCo) + u3) ]);
+        }
+        return null;
+      }
+      function solvePythagoras(low) {
+        if (!/pythagoras|hypotenuse|right.angled|right triangle/.test(low)) return null;
+        var hypM = low.match(/hypotenuse\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)/);
+        var numsAll = low.match(/\d+(?:\.\d+)?/g) || [];
+        if (hypM) {
+          var hyp = +hypM[1];
+          var others = numsAll.map(Number).filter(function (n) { return n !== hyp; });
+          if (others.length < 1) return null;
+          var leg = others[0], miss = Math.sqrt(hyp * hyp - leg * leg);
+          if (!Xclose(miss * miss + leg * leg, hyp * hyp, 1e-7)) return null;
+          return Xmk("Pythagoras' Theorem — Finding a Shorter Side", "a² + b² = c² where c is the hypotenuse (the longest side, opposite the right angle). To find a shorter side, subtract the squares.", "Missing side = " + fmtNum(miss), [
+            Xst("Write the theorem with the unknown as a", "a² + " + fmtNum(leg) + "² = " + fmtNum(hyp) + "² — the hypotenuse is " + fmtNum(hyp) + ":", "a² = " + fmtNum(hyp) + "² − " + fmtNum(leg) + "²"),
+            Xst("Calculate the squares", "", "a² = " + fmtNum(hyp * hyp) + " − " + fmtNum(leg * leg) + " = " + fmtNum(hyp * hyp - leg * leg)),
+            Xst("Take the square root", "", "a = √" + fmtNum(hyp * hyp - leg * leg) + " = " + fmtNum(miss)),
+            Xst("Check", fmtNum(miss) + "² + " + fmtNum(leg) + "² = " + fmtNum(miss * miss + leg * leg) + " = " + fmtNum(hyp) + "² ✓", ""),
+            Xst("State the final answer", "", "Missing side = " + fmtNum(miss))
+          ]);
+        }
+        var pairM = low.match(/(?:sides?|legs?|a\s*(?:and|=)|base and height)\s*(?:are|is|=|of)?\s*(\d+(?:\.\d+)?)\s*(?:and|,|x|×)\s*(\d+(?:\.\d+)?)/) || (numsAll.length >= 2 ? { 1: numsAll[0], 2: numsAll[1] } : null);
+        if (!pairM) return null;
+        var pa = +pairM[1], pb = +pairM[2], pc = Math.sqrt(pa * pa + pb * pb);
+        if (!Xclose(pc * pc, pa * pa + pb * pb, 1e-7)) return null;
+        return Xmk("Pythagoras' Theorem — Finding the Hypotenuse", "a² + b² = c²: square the two shorter sides, add, and take the square root — that gives the hypotenuse, the side opposite the right angle.", "Hypotenuse = " + fmtNum(pc), [
+          Xst("Square both shorter sides", "", fmtNum(pa) + "² = " + fmtNum(pa * pa) + " &nbsp; and &nbsp; " + fmtNum(pb) + "² = " + fmtNum(pb * pb)),
+          Xst("Add the squares", "", "c² = " + fmtNum(pa * pa) + " + " + fmtNum(pb * pb) + " = " + fmtNum(pa * pa + pb * pb)),
+          Xst("Take the square root", "", "c = √" + fmtNum(pa * pa + pb * pb) + " = " + fmtNum(pc)),
+          Xst("State the final answer", "", "Hypotenuse = " + fmtNum(pc))
+        ]);
+      }
+      function solveAngles(low) {
+        var m;
+        if (/triangle/.test(low) && /(third|missing|unknown|other) angle/.test(low)) {
+          var angs = low.match(/(\d+(?:\.\d+)?)\s*(?:°|degrees?)/g);
+          if (!angs || angs.length !== 2) { var two = low.match(/angles?\s*(?:are|of|:)?\s*(\d+(?:\.\d+)?)\s*(?:and|,)\s*(\d+(?:\.\d+)?)/); if (two) angs = [two[1], two[2]]; else return null; }
+          var a1 = parseFloat(angs[0]), a2 = parseFloat(angs[1]), a3 = 180 - a1 - a2;
+          if (a3 <= 0) return null;
+          if (!Xclose(a1 + a2 + a3, 180)) return null;
+          return Xmk("Angles in a Triangle", "The three interior angles of any triangle add up to 180° — so the missing angle is 180° minus the two known ones.", "Missing angle = " + fmtNum(a3) + "°", [
+            Xst("Add the known angles", "", fmtNum(a1) + "° + " + fmtNum(a2) + "° = " + fmtNum(a1 + a2) + "°"),
+            Xst("Subtract from 180°", "", "180° − " + fmtNum(a1 + a2) + "° = " + fmtNum(a3) + "°"),
+            Xst("Check", fmtNum(a1) + " + " + fmtNum(a2) + " + " + fmtNum(a3) + " = 180 ✓", ""),
+            Xst("State the final answer", "", fmtNum(a3) + "°")
+          ]);
+        }
+        var sidesMap = { triangle: 3, quadrilateral: 4, square: 4, pentagon: 5, hexagon: 6, heptagon: 7, octagon: 8, nonagon: 9, decagon: 10 };
+        var nSides = null, shapeName = "";
+        for (var name in sidesMap) { if (low.indexOf(name) >= 0) { nSides = sidesMap[name]; shapeName = name; break; } }
+        if (nSides === null) { var sm2 = low.match(/(\d+)\s*(?:sides|sided)/); if (sm2) { nSides = +sm2[1]; shapeName = nSides + "-sided polygon"; } }
+        if (nSides !== null && /polygon|angle/.test(low)) {
+          var sumI = (nSides - 2) * 180;
+          if (/exterior/.test(low) && /regular/.test(low)) {
+            var ext = 360 / nSides;
+            if (!Xclose(ext * nSides, 360)) return null;
+            return Xmk("Exterior Angle of a Regular Polygon", "The exterior angles of any polygon add to 360°; for a REGULAR polygon they are all equal, so divide 360° by the number of sides.", "Exterior angle = " + fmtNum(ext) + "°", [
+              Xst("Count the sides", "A " + shapeName + " has " + nSides + " sides:", "n = " + nSides),
+              Xst("Divide 360° by n", "", "360° / " + nSides + " = " + fmtNum(ext) + "°"),
+              Xst("State the final answer", "", "Each exterior angle = " + fmtNum(ext) + "°")
+            ]);
+          }
+          if (/interior/.test(low) && /regular/.test(low)) {
+            var intA = sumI / nSides;
+            if (!Xclose(intA + 360 / nSides, 180)) return null; /* interior + exterior = 180 */
+            return Xmk("Interior Angle of a Regular Polygon", "First find the SUM of interior angles, (n − 2) × 180°, then share it equally among the n angles of a regular polygon.", "Interior angle = " + fmtNum(intA) + "°", [
+              Xst("Sum of interior angles", "(n − 2) × 180° with n = " + nSides + ":", "(" + nSides + " − 2) × 180° = " + fmtNum(sumI) + "°"),
+              Xst("Divide by the number of angles", "A regular " + shapeName + " has " + nSides + " equal angles:", fmtNum(sumI) + "° / " + nSides + " = " + fmtNum(intA) + "°"),
+              Xst("State the final answer", "", "Each interior angle = " + fmtNum(intA) + "°")
+            ]);
+          }
+          if (/sum/.test(low) && /interior/.test(low)) {
+            return Xmk("Sum of Interior Angles of a Polygon", "Split the polygon into triangles from one corner: there are (n − 2) triangles, each contributing 180°.", "Sum = " + fmtNum(sumI) + "°", [
+              Xst("Count the sides", "A " + shapeName + " has n = " + nSides + " sides, giving " + (nSides - 2) + " triangles:", "(n − 2) = " + (nSides - 2)),
+              Xst("Multiply by 180°", "", "(" + nSides + " − 2) × 180° = " + fmtNum(sumI) + "°"),
+              Xst("State the final answer", "", "Sum of interior angles = " + fmtNum(sumI) + "°")
+            ]);
+          }
+        }
+        if (/angle at (?:the )?centre/.test(low) && /circumference/.test(low)) {
+          var cm = low.match(/angle at (?:the )?centre\s*(?:is|=)?\s*(\d+(?:\.\d+)?)/);
+          var fm = low.match(/angle at (?:the )?circumference\s*(?:is|=)?\s*(\d+(?:\.\d+)?)/);
+          if (cm && /find|what/.test(low)) {
+            var centre = +cm[1], circ2 = centre / 2;
+            if (!Xclose(circ2 * 2, centre)) return null;
+            return Xmk("Circle Theorem — Angle at the Centre", "The angle at the centre of a circle is TWICE the angle at the circumference standing on the same chord/arc.", "Angle at the circumference = " + fmtNum(circ2) + "°", [
+              Xst("Halve the centre angle", "Circumference angle = centre angle ÷ 2:", fmtNum(centre) + "° ÷ 2 = " + fmtNum(circ2) + "°"),
+              Xst("State the final answer", "", fmtNum(circ2) + "°")
+            ]);
+          }
+          if (fm && /find|what/.test(low)) {
+            var circA = +fm[1], centre2 = circA * 2;
+            return Xmk("Circle Theorem — Angle at the Centre", "The angle at the centre of a circle is TWICE the angle at the circumference standing on the same chord/arc.", "Angle at the centre = " + fmtNum(centre2) + "°", [
+              Xst("Double the circumference angle", "Centre angle = 2 × circumference angle:", "2 × " + fmtNum(circA) + "° = " + fmtNum(centre2) + "°"),
+              Xst("State the final answer", "", fmtNum(centre2) + "°")
+            ]);
+          }
+        }
+        return null;
+      }
+      function solveCoordGeom(t, low) {
+        var pts = [], pm, re = /\((-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\)/g;
+        while ((pm = re.exec(t))) pts.push({ x: +pm[1], y: +pm[2] });
+        if (pts.length < 1) return null;
+        var P = pts[0], Q = pts[1];
+        function ptStr(p) { return "(" + fmtNum(p.x) + ", " + fmtNum(p.y) + ")"; }
+        if (/midpoint/.test(low) && Q) {
+          var mx = (P.x + Q.x) / 2, my = (P.y + Q.y) / 2;
+          if (!Xclose(mx * 2, P.x + Q.x) || !Xclose(my * 2, P.y + Q.y)) return null;
+          return Xmk("Midpoint of a Line Segment", "The midpoint is the average of the two x-coordinates and the average of the two y-coordinates.", "Midpoint = (" + fmtNum(mx) + ", " + fmtNum(my) + ")", [
+            Xst("Average the x-coordinates", "", "(" + fmtNum(P.x) + " + " + fmtNum(Q.x) + ") / 2 = " + fmtNum(mx)),
+            Xst("Average the y-coordinates", "", "(" + fmtNum(P.y) + " + " + fmtNum(Q.y) + ") / 2 = " + fmtNum(my)),
+            Xst("State the final answer", "", "Midpoint = (" + fmtNum(mx) + ", " + fmtNum(my) + ")")
+          ]);
+        }
+        if (/distance|length of/.test(low) && Q) {
+          var dx = Q.x - P.x, dy = Q.y - P.y, dist = Math.sqrt(dx * dx + dy * dy);
+          if (!Xclose(dist * dist, dx * dx + dy * dy, 1e-7)) return null;
+          return Xmk("Distance Between Two Points", "The distance is Pythagoras on the horizontal and vertical gaps: d = √((x₂−x₁)² + (y₂−y₁)²).", "Distance = " + fmtNum(dist), [
+            Xst("Find the horizontal and vertical gaps", ptStr(P) + " to " + ptStr(Q) + ":", "Δx = " + fmtNum(Q.x) + " − " + fmtNum(P.x) + " = " + fmtNum(dx) + " &nbsp;·&nbsp; Δy = " + fmtNum(Q.y) + " − " + fmtNum(P.y) + " = " + fmtNum(dy)),
+            Xst("Apply Pythagoras", "", "d = √(" + fmtNum(dx) + "² + " + fmtNum(dy) + "²) = √" + fmtNum(dx * dx + dy * dy) + " = " + fmtNum(dist)),
+            Xst("State the final answer", "", "Distance = " + fmtNum(dist))
+          ]);
+        }
+        if (/gradient|slope/.test(low) && !/equation/.test(low)) {
+          var gm = low.match(/gradient\s*(?:of the line through|through)/);
+          if (Q) {
+            var dxg = Q.x - P.x, dyg = Q.y - P.y;
+            if (dxg === 0) return Xmk("Gradient (Slope)", "Gradient = rise ÷ run. Here the run is 0 — the line is vertical.", "Gradient is undefined (vertical line)", [
+              Xst("Compare the coordinates", "Both points have x = " + fmtNum(P.x) + " — the line goes straight up:", "Δx = 0"),
+              Xst("State the final answer", "A vertical line has no defined gradient (division by 0).", "Undefined") ]);
+            var gr = dyg / dxg;
+            if (!Xclose(gr * dxg, dyg)) return null;
+            return Xmk("Gradient (Slope) of a Line", "Gradient = change in y ÷ change in x (rise over run) between the two points.", "Gradient = " + fmtNum(gr), [
+              Xst("Find the changes", ptStr(P) + " to " + ptStr(Q) + ":", "Δy = " + fmtNum(Q.y) + " − " + fmtNum(P.y) + " = " + fmtNum(dyg) + " &nbsp;·&nbsp; Δx = " + fmtNum(Q.x) + " − " + fmtNum(P.x) + " = " + fmtNum(dxg)),
+              Xst("Divide rise by run", "", "Gradient = " + fmtNum(dyg) + " / " + fmtNum(dxg) + " = " + fmtNum(gr)),
+              Xst("State the final answer", "", "Gradient = " + fmtNum(gr))
+            ]);
+          }
+        }
+        if (/equation of (?:the )?line|equation of a line/.test(low)) {
+          var grad = null, useP = P;
+          if (Q) { var dxe = Q.x - P.x, dye = Q.y - P.y; if (dxe === 0) return null; grad = dye / dxe; }
+          else { var gOnly = low.match(/gradient\s*(?:=|is|of)?\s*(-?\d+(?:\.\d+)?)/); if (gOnly) grad = +gOnly[1]; }
+          if (grad === null) return null;
+          var cInt = useP.y - grad * useP.x;
+          if (!Xclose(grad * useP.x + cInt, useP.y)) return null; /* the point lies on the line */
+          if (Q && !Xclose(grad * Q.x + cInt, Q.y)) return null; /* so does the second point */
+          var eqStr = "y = " + (grad === 1 ? "" : grad === -1 ? "−" : fmtNum(grad)) + "x" + (cInt === 0 ? "" : cInt > 0 ? " + " + fmtNum(cInt) : " − " + fmtNum(-cInt));
+          var stepsEq = [Xst("Find the gradient", Q ? "Gradient = Δy/Δx between the two points:" : "The gradient is given:", "m = " + fmtNum(grad))];
+          stepsEq.push(Xst("Use y = mx + c and substitute the point " + ptStr(useP), "Put m = " + fmtNum(grad) + " and the point into y = mx + c to find c:", fmtNum(useP.y) + " = " + fmtNum(grad) + " × " + fmtNum(useP.x) + " + c &nbsp;⇒&nbsp; c = " + fmtNum(cInt)));
+          stepsEq.push(Xst("Check the point satisfies the equation", fmtNum(grad) + " × " + fmtNum(useP.x) + " + " + fmtNum(cInt) + " = " + fmtNum(useP.y) + " ✓", ""));
+          stepsEq.push(Xst("State the final answer", "", eqStr));
+          return Xmk("Equation of a Straight Line", "y = mx + c: m is the gradient and c is the y-intercept. Find m, then substitute one point to find c.", eqStr, stepsEq);
+        }
+        return null;
+      }
+      function solveScaleFactor(low) {
+        if (!/scale factor|enlarge/.test(low)) return null;
+        var sfM = low.match(/scale factor\s*(?:of)?\s*(\d+(?:\.\d+)?)/);
+        var lenM = low.match(/(?:side|length|height|width)\s*(?:of|is|=)?\s*(\d+(?:\.\d+)?)\s*(cm|mm|m)?/);
+        if (sfM && lenM && /enlarge|image|new|becomes/.test(low)) {
+          var sf = +sfM[1], orig = +lenM[1], img = orig * sf;
+          if (!Xclose(img / sf, orig)) return null;
+          var un = lenM[2] ? " " + lenM[2] : "";
+          return Xmk("Enlargement — Scale Factor", "Under an enlargement, every length is multiplied by the scale factor.", "Image length = " + fmtNum(img) + un, [
+            Xst("Multiply by the scale factor", "", fmtNum(orig) + un + " × " + fmtNum(sf) + " = " + fmtNum(img) + un),
+            Xst("State the final answer", "", "Image length = " + fmtNum(img) + un)
+          ]);
+        }
+        var fromTo = low.match(/(\d+(?:\.\d+)?)\s*(?:cm|mm|m)?\s*to\s*(\d+(?:\.\d+)?)/);
+        if (/find|what is|calculate/.test(low) && fromTo && /scale factor/.test(low)) {
+          var sfv = (+fromTo[2]) / (+fromTo[1]);
+          if (!Xclose(sfv * (+fromTo[1]), +fromTo[2])) return null;
+          return Xmk("Finding the Scale Factor", "Scale factor = image length ÷ original length.", "Scale factor = " + fmtNum(sfv), [
+            Xst("Divide image by original", "", fmtNum(+fromTo[2]) + " ÷ " + fmtNum(+fromTo[1]) + " = " + fmtNum(sfv)),
+            Xst("State the final answer", "", "Scale factor = " + fmtNum(sfv))
+          ]);
+        }
+        return null;
+      }
+
+      /* ----- trigonometry ----- */
+      function solveTrig(t, low) {
+        var tl = low.replace(/θ/g, "x").replace(/theta/g, "x");
+        var m;
+        /* convert degrees <-> radians */
+        m = tl.match(/(\d+(?:\.\d+)?)\s*(?:degrees?|°)\s*(?:to|in)\s*radians/);
+        if (m) { var deg = +m[1], rad = deg * Math.PI / 180;
+          var frac = XtoFrac(deg / 180);
+          var radStr = frac ? (frac.n === 1 && frac.d === 1 ? "π" : frac.n === 1 ? "π/" + frac.d : frac.n + "π/" + frac.d) : fmtNum(rad);
+          if (!Xclose(rad * 180 / Math.PI, deg, 1e-7)) return null;
+          return Xmk("Degrees → Radians", "Multiply by π/180 — a full turn of 360° is 2π radians, so 180° = π radians exactly.", fmtNum(deg) + "° = " + radStr + " rad", [
+            Xst("Multiply by π/180", "", fmtNum(deg) + " × π/180 = " + radStr),
+            Xst("As a decimal", "", "≈ " + fmtNum(rad) + " rad"),
+            Xst("State the final answer", "", fmtNum(deg) + "° = " + radStr + " radians") ]); }
+        m = tl.match(/pi\s*\/\s*(\d+)\s*radians?\s*(?:to|in)\s*degrees/) || tl.match(/(\d+(?:\.\d+)?)\s*radians?\s*(?:to|in)\s*degrees/);
+        if (m) { var isPi = /pi/.test(m[0]); var radIn = isPi ? Math.PI / (+m[1]) : +m[1]; var degOut = radIn * 180 / Math.PI;
+          if (!Xclose(degOut * Math.PI / 180, radIn, 1e-7)) return null;
+          return Xmk("Radians → Degrees", "Multiply by 180/π — since π radians = 180°.", fmtNum(degOut) + "°", [
+            Xst("Multiply by 180/π", "", (isPi ? "π/" + m[1] : fmtNum(radIn)) + " × 180/π = " + fmtNum(degOut) + "°"),
+            Xst("State the final answer", "", fmtNum(degOut) + "°") ]); }
+        /* inverse: sin x = 0.5, find x */
+        m = tl.match(/(sin|cos|tan)\s*x\s*=\s*(\d+(?:\.\d+)?|\d+\s*\/\s*\d+)/);
+        if (m) {
+          var fn = m[1], val = Xnum(m[2].replace(/\s+/g, ""));
+          if (val === null || ((fn !== "tan") && (val < -1 || val > 1))) return null;
+          var ang = (fn === "sin" ? Math.asin(val) : fn === "cos" ? Math.acos(val) : Math.atan(val)) * 180 / Math.PI;
+          var back = fn === "sin" ? Math.sin(ang * Math.PI / 180) : fn === "cos" ? Math.cos(ang * Math.PI / 180) : Math.tan(ang * Math.PI / 180);
+          if (!Xclose(back, val, 1e-6)) return null;
+          return Xmk("Inverse Trigonometric Function", "To undo " + fn + ", use its inverse (" + fn + "⁻¹) — the calculator's shift function. Angles here are in degrees.", "x = " + fmtNum(ang) + "°", [
+            Xst("Apply the inverse function", fn + " x = " + fmtNum(val) + " &nbsp;⇒&nbsp; x = " + fn + "⁻¹(" + fmtNum(val) + "):", "x = " + fn + "⁻¹(" + fmtNum(val) + ")"),
+            Xst("Calculate (in degrees)", "", "x = " + fmtNum(ang) + "°"),
+            Xst("Check", fn + "(" + fmtNum(ang) + "°) = " + fmtNum(back) + " ✓", ""),
+            Xst("State the final answer", "This is the principal (first) solution, between 0° and 180° for sin and cos:", "x = " + fmtNum(ang) + "°") ]); }
+        /* exact / decimal value: sin 30, cos(45), what is tan 60 */
+        m = tl.match(/^(?:find|evaluate|calculate|what is|value of|find the value of)?\s*(sin|cos|tan)\s*\(?\s*(\d+(?:\.\d+)?)\s*(?:degrees?|°)?\s*\)?\s*$/);
+        if (m) {
+          var fn2 = m[1], aDeg = +m[2], aRad = aDeg * Math.PI / 180;
+          var val2 = fn2 === "sin" ? Math.sin(aRad) : fn2 === "cos" ? Math.cos(aRad) : Math.tan(aRad);
+          if (fn2 === "tan" && Math.abs(Math.cos(aRad)) < 1e-12) return Xmk("Trigonometric Ratios — Exact Values", "tan 90° is undefined: tan = opposite/adjacent, and at 90° the adjacent side shrinks to 0 — division by 0.", "tan " + fmtNum(aDeg) + "° is undefined", [
+            Xst("Look at the ratio", "tan θ = sin θ / cos θ, and cos " + fmtNum(aDeg) + "° = 0:", "tan = sin/cos = ÷ 0"),
+            Xst("State the final answer", "", "tan " + fmtNum(aDeg) + "° is undefined") ]);
+          var exacts = { "0": { sin: "0", cos: "1", tan: "0" }, "30": { sin: "1/2", cos: "√3/2", tan: "1/√3" }, "45": { sin: "√2/2", cos: "√2/2", tan: "1" }, "60": { sin: "√3/2", cos: "1/2", tan: "√3" }, "90": { sin: "1", cos: "0" } };
+          var ex = exacts[String(aDeg)] ? exacts[String(aDeg)][fn2] : null;
+          if (ex) { var exNum = ex === "0" ? 0 : ex === "1" ? 1 : ex === "1/2" ? 0.5 : ex === "√3/2" ? Math.sqrt(3) / 2 : ex === "√2/2" ? Math.SQRT1_2 : ex === "1/√3" ? 1 / Math.sqrt(3) : Math.sqrt(3);
+            if (!Xclose(exNum, val2, 1e-9)) return null; }
+          return Xmk("Trigonometric Ratios — Exact Values", "The standard angles 0°, 30°, 45°, 60°, 90° have exact values worth memorising (from the 30-60-90 and 45-45-90 triangles). Other angles are found on a calculator — in DEGREES mode.", fn2 + " " + fmtNum(aDeg) + "° = " + (ex || fmtNum(val2)), [
+            Xst("Use the standard-angle value", ex ? "From the special triangles:" : "On a calculator in degree mode:", fn2 + " " + fmtNum(aDeg) + "° = " + (ex || fmtNum(val2))),
+            Xst("As a decimal", "", "≈ " + fmtNum(val2)),
+            Xst("State the final answer", "", fn2 + " " + fmtNum(aDeg) + "° = " + (ex || fmtNum(val2))) ]); }
+        /* right triangle: find a named side */
+        if (/right/.test(tl) || /hypotenuse|opposite|adjacent/.test(tl)) {
+          var angM = tl.match(/(\d+(?:\.\d+)?)\s*(?:°|degrees)/) || tl.match(/angle\s*(?:of|=|is)?\s*(\d+(?:\.\d+)?)/);
+          var knownM = tl.match(/(hypotenuse|opposite|adjacent)\s*(?:side\s*)?(?:is|=|of|measures?)?\s*(\d+(?:\.\d+)?)/);
+          var targetM = tl.match(/find\s*(?:the\s*)?(opposite|adjacent|hypotenuse)/) || tl.match(/(opposite|adjacent|hypotenuse)\s*(?:side\s*)?\?/);
+          if (angM && knownM && targetM && knownM[1] !== targetM[1]) {
+            var th = +angM[1], thR = th * Math.PI / 180, knownSide = knownM[1], knownVal = +knownM[2], target = targetM[1];
+            var sides = {};
+            sides[knownSide] = knownVal;
+            if (!sides.hypotenuse) sides.hypotenuse = knownSide === "opposite" ? knownVal / Math.sin(thR) : knownVal / Math.cos(thR);
+            if (!sides.opposite) sides.opposite = sides.hypotenuse * Math.sin(thR);
+            if (!sides.adjacent) sides.adjacent = sides.hypotenuse * Math.cos(thR);
+            var ansSide = sides[target];
+            if (!Xclose(Math.sin(thR), sides.opposite / sides.hypotenuse, 1e-7) || !Xclose(Math.cos(thR), sides.adjacent / sides.hypotenuse, 1e-7) || !Xclose(sides.opposite * sides.opposite + sides.adjacent * sides.adjacent, sides.hypotenuse * sides.hypotenuse, 1e-6)) return null; /* verified with SOHCAHTOA + Pythagoras */
+            var ratioName = target === "hypotenuse" || knownSide === "hypotenuse" ? (target === "opposite" || knownSide === "opposite" ? "sin" : "cos") : "tan";
+            return Xmk("Right-Angled Triangle (SOHCAHTOA)", "Label the sides from the angle: Hypotenuse (longest), Opposite (across from the angle), Adjacent (next to it). Then SOH CAH TOA picks the ratio: sin = Opp/Hyp, cos = Adj/Hyp, tan = Opp/Adj.", target + " = " + fmtNum(ansSide), [
+              Xst("Label the sides", "Angle = " + fmtNum(th) + "°, known side: " + knownSide + " = " + fmtNum(knownVal) + "; we want the " + target + ":", "sin " + fmtNum(th) + "° = Opp/Hyp · cos " + fmtNum(th) + "° = Adj/Hyp · tan " + fmtNum(th) + "° = Opp/Adj"),
+              Xst("Use the ratio containing both sides", "Both the " + knownSide + " and the " + target + " appear in the " + ratioName + " ratio:", ratioName + " " + fmtNum(th) + "° links " + knownSide + " and " + target),
+              Xst("Solve for the " + target, "", target + " = " + fmtNum(ansSide)),
+              Xst("Check with Pythagoras", "Opposite² + Adjacent² = " + fmtNum(sides.opposite * sides.opposite + sides.adjacent * sides.adjacent) + " = Hypotenuse² ✓", ""),
+              Xst("State the final answer", "", target + " = " + fmtNum(ansSide)) ]);
+          }
+        }
+        /* sine rule */
+        if (/sine rule/.test(tl)) {
+          var asg = {}, am, reA = /([A-Za-z])\s*=\s*(\d+(?:\.\d+)?)/g;
+          while ((am = reA.exec(t))) asg[am[1]] = +am[2];
+          function sinD(x) { return Math.sin(x * Math.PI / 180); }
+          if (asg.a && asg.A && asg.B && /find b/.test(tl)) { var bS = asg.a * sinD(asg.B) / sinD(asg.A); if (!Xclose(asg.a / sinD(asg.A), bS / sinD(asg.B), 1e-7)) return null;
+            return Xmk("The Sine Rule — Finding a Side", "a/sin A = b/sin B: a side divided by the sine of its opposite angle is the same all the way around the triangle.", "b = " + fmtNum(bS), [
+              Xst("Write the sine rule for the two pairs", "", "a/sin A = b/sin B"),
+              Xst("Substitute", "", fmtNum(asg.a) + "/sin " + fmtNum(asg.A) + "° = b/sin " + fmtNum(asg.B) + "°"),
+              Xst("Solve for b", "b = " + fmtNum(asg.a) + " × sin " + fmtNum(asg.B) + "° / sin " + fmtNum(asg.A) + "°:", "b = " + fmtNum(bS)),
+              Xst("State the final answer", "", "b = " + fmtNum(bS)) ]); }
+          if (asg.a && asg.b && asg.A && /find b/.test(tl)) { var sinB = asg.b * sinD(asg.A) / asg.a; if (sinB > 1) return null; var Bv = Math.asin(sinB) * 180 / Math.PI; if (!Xclose(asg.b / sinD(Bv), asg.a / sinD(asg.A), 1e-7)) return null;
+            return Xmk("The Sine Rule — Finding an Angle", "a/sin A = b/sin B, rearranged to sin B = b sin A / a, then inverse-sine. (Sine is ambiguous: B or 180° − B both fit — the acute value is shown.)", "B = " + fmtNum(Bv) + "°", [
+              Xst("Rearrange the sine rule", "", "sin B = b × sin A / a"),
+              Xst("Substitute", "", "sin B = " + fmtNum(asg.b) + " × sin " + fmtNum(asg.A) + "° / " + fmtNum(asg.a) + " = " + fmtNum(sinB)),
+              Xst("Inverse sine", "", "B = sin⁻¹(" + fmtNum(sinB) + ") = " + fmtNum(Bv) + "°"),
+              Xst("State the final answer", "", "B = " + fmtNum(Bv) + "° (or " + fmtNum(180 - Bv) + "° — check the diagram)") ]); }
+        }
+        /* cosine rule */
+        if (/cosine rule/.test(tl)) {
+          var asg2 = {}, am2, reA2 = /([A-Za-z])\s*=\s*(\d+(?:\.\d+)?)/g;
+          while ((am2 = reA2.exec(t))) asg2[am2[1]] = +am2[2];
+          function cosD(x) { return Math.cos(x * Math.PI / 180); }
+          if (asg2.a && asg2.b && asg2.C && /find c/.test(tl)) { var cSq = asg2.a * asg2.a + asg2.b * asg2.b - 2 * asg2.a * asg2.b * cosD(asg2.C); var cV = Math.sqrt(cSq); if (!Xclose(cV * cV, cSq)) return null;
+            return Xmk("The Cosine Rule — Finding a Side", "c² = a² + b² − 2ab cos C — Pythagoras with a correction term for the included angle C between sides a and b.", "c = " + fmtNum(cV), [
+              Xst("Substitute into c² = a² + b² − 2ab cos C", "", "c² = " + fmtNum(asg2.a) + "² + " + fmtNum(asg2.b) + "² − 2×" + fmtNum(asg2.a) + "×" + fmtNum(asg2.b) + "×cos " + fmtNum(asg2.C) + "°"),
+              Xst("Calculate", "", "c² = " + fmtNum(cSq)),
+              Xst("Take the square root", "", "c = √" + fmtNum(cSq) + " = " + fmtNum(cV)),
+              Xst("State the final answer", "", "c = " + fmtNum(cV)) ]); }
+          if (asg2.a && asg2.b && asg2.c && /find (angle )?c/.test(tl)) { var cosC = (asg2.a * asg2.a + asg2.b * asg2.b - asg2.c * asg2.c) / (2 * asg2.a * asg2.b); if (cosC < -1 || cosC > 1) return null; var CV = Math.acos(cosC) * 180 / Math.PI; if (!Xclose(cosD(CV), cosC, 1e-7)) return null;
+            return Xmk("The Cosine Rule — Finding an Angle", "Rearranged: cos C = (a² + b² − c²) / (2ab) when all three sides are known.", "C = " + fmtNum(CV) + "°", [
+              Xst("Substitute into cos C = (a² + b² − c²)/(2ab)", "", "cos C = (" + fmtNum(asg2.a) + "² + " + fmtNum(asg2.b) + "² − " + fmtNum(asg2.c) + "²) / (2×" + fmtNum(asg2.a) + "×" + fmtNum(asg2.b) + ") = " + fmtNum(cosC)),
+              Xst("Inverse cosine", "", "C = cos⁻¹(" + fmtNum(cosC) + ") = " + fmtNum(CV) + "°"),
+              Xst("State the final answer", "", "C = " + fmtNum(CV) + "°") ]); }
+        }
+        return null;
+      }
+
+      /* ----- matrices ----- */
+      function parseMatrix(str) {
+        var inner = str.replace(/^\s*\[\[/, "").replace(/\]\]\s*$/, "");
+        var rows = inner.split(/\]\s*,\s*\[/);
+        var M = [];
+        for (var i = 0; i < rows.length; i++) {
+          var cells = rows[i].split(",").map(function (c) { return Xnum(c.trim()); });
+          if (cells.some(function (c) { return c === null; })) return null;
+          M.push(cells);
+        }
+        var w = M[0].length;
+        if (!M.every(function (r) { return r.length === w; })) return null;
+        return M;
+      }
+      function matStr(M) { return "[" + M.map(function (r) { return "[" + r.map(fmtNum).join(", ") + "]"; }).join(", ") + "]"; }
+      function matMul(A, B) {
+        var out = [];
+        for (var i = 0; i < A.length; i++) { out.push([]); for (var j = 0; j < B[0].length; j++) { var s = 0; for (var k = 0; k < B.length; k++) s += A[i][k] * B[k][j]; out[i].push(s); } }
+        return out;
+      }
+      function matDet(M) {
+        if (M.length === 2) return M[0][0] * M[1][1] - M[0][1] * M[1][0];
+        var det = 0;
+        for (var j = 0; j < 3; j++) {
+          var sub = [];
+          for (var i = 1; i < 3; i++) { var row = []; for (var k = 0; k < 3; k++) if (k !== j) row.push(M[i][k]); sub.push(row); }
+          det += (j % 2 === 0 ? 1 : -1) * M[0][j] * matDet(sub);
+        }
+        return det;
+      }
+      function solveMatrix(t, low) {
+        var blocks = [], bm, reM = /\[\[[\s\S]*?\]\]/g;
+        while ((bm = reM.exec(t))) blocks.push(bm[0]);
+        if (!blocks.length) return null;
+        var A = parseMatrix(blocks[0]); if (!A) return null;
+        if (/determinant|det\b/.test(low) && blocks.length === 1) {
+          if (A.length !== A[0].length || A.length > 3) return null;
+          var det = matDet(A);
+          var det2 = 0; /* second computation: cofactor along the LAST row for 3x3, ad-bc check for 2x2 */
+          if (A.length === 2) det2 = A[0][0] * A[1][1] - A[1][0] * A[0][1];
+          else { for (var j = 0; j < 3; j++) { var sub = []; for (var i = 0; i < 2; i++) { var row = []; for (var k = 0; k < 3; k++) if (k !== j) row.push(A[i][k]); sub.push(row); } det2 += ((2 + j) % 2 === 0 ? 1 : -1) * A[2][j] * matDet(sub); } }
+          if (!Xclose(det, det2, 1e-9)) return null; /* verified by a second expansion */
+          var stepsD = [Xst("Write the matrix", "", matStr(A))];
+          if (A.length === 2) stepsD.push(Xst("Method — det = ad − bc", "Multiply the leading diagonal, multiply the other diagonal, and subtract:", "det = " + fmtNum(A[0][0]) + "×" + fmtNum(A[1][1]) + " − " + fmtNum(A[0][1]) + "×" + fmtNum(A[1][0])));
+          else stepsD.push(Xst("Method — expand along the first row", "Each entry of the first row times its 2×2 minor, with the + − + sign pattern:", "det = " + fmtNum(det)));
+          stepsD.push(Xst("Calculate", "", "det = " + fmtNum(det)));
+          stepsD.push(Xst("State the final answer", det === 0 ? "A determinant of 0 means the matrix is singular — it has no inverse." : "", "Determinant = " + fmtNum(det)));
+          return Xmk("Determinant of a Matrix", A.length === 2 ? "For a 2×2 matrix, det = ad − bc: leading diagonal product minus the other diagonal product." : "For a 3×3 matrix, expand along a row: each entry × its minor determinant, with alternating + − + signs.", "Determinant = " + fmtNum(det), stepsD);
+        }
+        if (/inverse/.test(low) && blocks.length === 1) {
+          if (A.length !== 2 || A[0].length !== 2) return null;
+          var dI = matDet(A);
+          if (Math.abs(dI) < 1e-12) return Xmk("Inverse of a Matrix", "A matrix has an inverse only when its determinant is not 0.", "No inverse exists (determinant = 0)", [
+            Xst("Find the determinant first", "det = " + fmtNum(A[0][0]) + "×" + fmtNum(A[1][1]) + " − " + fmtNum(A[0][1]) + "×" + fmtNum(A[1][0]) + " = 0:", "det = 0"),
+            Xst("State the final answer", "A zero determinant means the matrix is singular — no inverse exists.", "No inverse") ]);
+          var inv = [[A[1][1] / dI, -A[0][1] / dI], [-A[1][0] / dI, A[0][0] / dI]];
+          var prodI = matMul(A, inv);
+          if (!Xclose(prodI[0][0], 1, 1e-9) || !Xclose(prodI[1][1], 1, 1e-9) || !Xclose(prodI[0][1], 0, 1e-9) || !Xclose(prodI[1][0], 0, 1e-9)) return null; /* verified: A x A^-1 = I */
+          return Xmk("Inverse of a 2×2 Matrix", "Swap the leading-diagonal entries, change the signs of the other two, and divide everything by the determinant (ad − bc).", "Inverse = " + matStr(inv), [
+            Xst("Find the determinant", "det = ad − bc = " + fmtNum(A[0][0]) + "×" + fmtNum(A[1][1]) + " − " + fmtNum(A[0][1]) + "×" + fmtNum(A[1][0]) + ":", "det = " + fmtNum(dI)),
+            Xst("Swap, negate, divide", "Swap a and d; make b and c negative; divide by " + fmtNum(dI) + ":", "Inverse = " + matStr(inv)),
+            Xst("Check: A × A⁻¹ = I", "Multiplying the matrix by its inverse gives the identity matrix:", matStr(prodI) + " ✓"),
+            Xst("State the final answer", "", "Inverse = " + matStr(inv)) ]);
+        }
+        if (/transpose/.test(low) && blocks.length === 1) {
+          var Tp = A[0].map(function (_, j) { return A.map(function (row) { return row[j]; }); });
+          var okT = Tp.every(function (row, i) { return row.every(function (val, j) { return val === A[j][i]; }); });
+          if (!okT) return null;
+          return Xmk("Transpose of a Matrix", "The transpose turns rows into columns: the entry in row i, column j moves to row j, column i.", "Transpose = " + matStr(Tp), [
+            Xst("Write each row as a column", "", matStr(A) + " → " + matStr(Tp)),
+            Xst("State the final answer", "", "Transpose = " + matStr(Tp)) ]);
+        }
+        if (blocks.length === 2) {
+          var B = parseMatrix(blocks[1]); if (!B) return null;
+          var between = t.slice(t.indexOf(blocks[0]) + blocks[0].length, t.indexOf(blocks[1]));
+          var scalarM = t.match(/(-?\d+(?:\.\d+)?)\s*(?:\*|×|x)\s*\[\[/);
+          if (/\+/.test(between) || /\-/.test(between)) {
+            var isAdd = /\+/.test(between);
+            if (A.length !== B.length || A[0].length !== B[0].length) return null;
+            var out = A.map(function (row, i) { return row.map(function (val, j) { return isAdd ? val + B[i][j] : val - B[i][j]; }); });
+            var chk = out.every(function (row, i) { return row.every(function (val, j) { return Xclose(isAdd ? val - B[i][j] : val + B[i][j], A[i][j]); }); });
+            if (!chk) return null; /* verified entry by entry */
+            return Xmk(isAdd ? "Adding Matrices" : "Subtracting Matrices", "Matrices of the same size are " + (isAdd ? "added" : "subtracted") + " entry by entry — each position combines only with the same position in the other matrix.", "Result = " + matStr(out), [
+              Xst(isAdd ? "Add corresponding entries" : "Subtract corresponding entries", "Top-left with top-left, and so on:", matStr(A) + (isAdd ? " + " : " − ") + matStr(B)),
+              Xst("State the final answer", "", "Result = " + matStr(out)) ]);
+          }
+          if (/\*|×|multiply|times/.test(between) || /\]\s*\[/.test(t)) {
+            if (A[0].length !== B.length) return null;
+            var prod = matMul(A, B);
+            var prod2 = []; /* recompute with the loops in a different order */
+            for (var i2 = 0; i2 < A.length; i2++) { prod2.push([]); for (var j2 = 0; j2 < B[0].length; j2++) { var s2 = 0; for (var k2 = B.length - 1; k2 >= 0; k2--) s2 += A[i2][k2] * B[k2][j2]; prod2[i2].push(s2); } }
+            var same = prod.every(function (row, i) { return row.every(function (val, j) { return Xclose(val, prod2[i][j]); }); });
+            if (!same) return null;
+            var e00 = A[0].map(function (val, k) { return fmtNum(val) + "×" + fmtNum(B[k][0]); }).join(" + ");
+            return Xmk("Multiplying Matrices", "Each entry of the product is a ROW of the first matrix dotted with a COLUMN of the second: multiply across, then add. The sizes must fit: (m×n) × (n×p).", "Product = " + matStr(prod), [
+              Xst("Check the sizes fit", "First matrix has " + A[0].length + " columns; second has " + B.length + " rows — they match, so the product exists:", A.length + "×" + A[0].length + " times " + B.length + "×" + B[0].length),
+              Xst("Work out the top-left entry", "Row 1 of the first × column 1 of the second:", e00 + " = " + fmtNum(prod[0][0])),
+              Xst("Repeat for every row–column pair", "", "Product = " + matStr(prod)),
+              Xst("State the final answer", "", "Product = " + matStr(prod)) ]);
+          }
+          return null;
+        }
+        if (blocks.length === 1) {
+          var scM = t.match(/(-?\d+(?:\.\d+)?)\s*(?:\*|×)\s*\[\[/) || t.match(/\[\][\s\S]*?(?:\*|×)\s*(-?\d+(?:\.\d+)?)/);
+          if (scM || /scalar|multiply.*by|times/.test(low)) {
+            var sc = scM ? +scM[1] : null;
+            if (sc === null) { var nm = low.match(/(?:by|scalar)\s*(-?\d+(?:\.\d+)?)/); if (nm) sc = +nm[1]; }
+            if (sc === null) return null;
+            var outS = A.map(function (row) { return row.map(function (val) { return val * sc; }); });
+            var chkS = outS.every(function (row, i) { return row.every(function (val, j) { return Xclose(val / sc, A[i][j]); }); });
+            if (!chkS && sc !== 0) return null;
+            return Xmk("Scalar Multiplication of a Matrix", "Multiply EVERY entry of the matrix by the scalar.", "Result = " + matStr(outS), [
+              Xst("Multiply each entry by " + fmtNum(sc), "", matStr(A) + " × " + fmtNum(sc)),
+              Xst("State the final answer", "", "Result = " + matStr(outS)) ]);
+          }
+        }
+        return null;
+      }
+
+      /* ----- statistics, probability, combinations ----- */
+      function solveStats(t, low) {
+        var fm = low.match(/values?\s*[:\-]?\s*([\d,\s]+?)\s*(?:and\s+|with\s+)?frequenc\w*\s*[:\-]?\s*([\d,\s]+?)\s*$/);
+        if (fm && /mean/.test(low)) {
+          var vals = Xlist(fm[1]), freqs = Xlist(fm[2]);
+          if (!vals || !freqs || vals.length !== freqs.length) return null;
+          var expanded = [];
+          vals.forEach(function (val, i) { for (var k = 0; k < freqs[i]; k++) expanded.push(val); });
+          var sumE = expanded.reduce(function (a2, b2) { return a2 + b2; }, 0);
+          var meanE = sumE / expanded.length; /* verified against the expanded raw list */
+          var sf = vals.reduce(function (a2, val, i) { return a2 + val * freqs[i]; }, 0), nf = freqs.reduce(function (a2, b2) { return a2 + b2; }, 0);
+          if (!Xclose(meanE, sf / nf, 1e-9)) return null;
+          return Xmk("Mean from a Frequency Table", "Multiply each value by its frequency (fx), add those up, and divide by the total frequency (Σf).", "Mean = " + fmtNum(meanE), [
+            Xst("Work out fx for each value", vals.map(function (val, i) { return fmtNum(val) + "×" + fmtNum(freqs[i]) + " = " + fmtNum(val * freqs[i]); }).join(" &nbsp;·&nbsp; "), "Σfx = " + fmtNum(sf) + ", &nbsp; Σf = " + fmtNum(nf)),
+            Xst("Divide Σfx by Σf", "", "Mean = " + fmtNum(sf) + " / " + fmtNum(nf) + " = " + fmtNum(meanE)),
+            Xst("State the final answer", "", "Mean = " + fmtNum(meanE)) ]);
+        }
+        var wantMean = /mean|average/.test(low), wantMedian = /median/.test(low), wantMode = /mode/.test(low), wantRange = /\brange\b/.test(low);
+        if (!wantMean && !wantMedian && !wantMode && !wantRange) return null;
+        var ofM = low.match(/(?:of|for)\s+(.+)$/);
+        if (!ofM) return null;
+        var list = Xlist(ofM[1].replace(/\?$/, ""));
+        if (!list || list.length < 2) return null;
+        var sorted = list.slice().sort(function (a2, b2) { return a2 - b2; });
+        var sum = list.reduce(function (a2, b2) { return a2 + b2; }, 0);
+        var steps = [Xst("Write the data in order", "Sorting first makes the median, mode and range easy to read off:", sorted.map(fmtNum).join(", "))];
+        var answers = [];
+        if (wantMean) { var mean = sum / list.length; if (!Xclose(mean * list.length, sum)) return null;
+          steps.push(Xst("Mean — add them all, divide by how many", "Sum = " + fmtNum(sum) + " and there are " + list.length + " values:", "Mean = " + fmtNum(sum) + " / " + list.length + " = " + fmtNum(mean)));
+          answers.push("Mean = " + fmtNum(mean)); }
+        if (wantMedian) { var nL = sorted.length, med = nL % 2 ? sorted[(nL - 1) / 2] : (sorted[nL / 2 - 1] + sorted[nL / 2]) / 2;
+          if (nL % 2 && sorted[(nL - 1) / 2] !== med) return null;
+          steps.push(Xst("Median — the middle value", nL % 2 ? "With " + nL + " values, the middle one is position " + ((nL + 1) / 2) + ":" : "With " + nL + " values, average the two middle ones (positions " + (nL / 2) + " and " + (nL / 2 + 1) + "):", "Median = " + fmtNum(med)));
+          answers.push("Median = " + fmtNum(med)); }
+        if (wantMode) { var counts = {}, best = null, bestC = 0;
+          list.forEach(function (val) { counts[val] = (counts[val] || 0) + 1; if (counts[val] > bestC) { bestC = counts[val]; best = val; } });
+          if (counts[best] !== bestC) return null;
+          steps.push(Xst("Mode — the most frequent value", "Count how often each value appears; " + fmtNum(best) + " appears " + bestC + " times, more than any other:", "Mode = " + fmtNum(best)));
+          answers.push("Mode = " + fmtNum(best)); }
+        if (wantRange) { var rng = sorted[sorted.length - 1] - sorted[0]; if (!Xclose(rng + sorted[0], sorted[sorted.length - 1])) return null;
+          steps.push(Xst("Range — largest minus smallest", "", "Range = " + fmtNum(sorted[sorted.length - 1]) + " − " + fmtNum(sorted[0]) + " = " + fmtNum(rng)));
+          answers.push("Range = " + fmtNum(rng)); }
+        steps.push(Xst("State the final answer", "", answers.join(" &nbsp;·&nbsp; ")));
+        return Xmk("Statistics — Mean, Median, Mode, Range", "Mean: total ÷ count. Median: the middle value once sorted. Mode: the most common value. Range: largest − smallest.", answers.join(", "), steps);
+      }
+      function fact(n) { var r = 1; for (var i = 2; i <= n; i++) r *= i; return r; }
+      function nCrCalc(n, r) { if (r < 0 || r > n) return null; r = Math.min(r, n - r); var res = 1; for (var i = 0; i < r; i++) res = res * (n - i) / (i + 1); return res; }
+      function solveProbability(low) {
+        var m;
+        m = low.match(/(\d+)\s*(?:choose|chose)\s*(\d+)/) || low.match(/\b(\d+)\s*c\s*(\d+)\b/) || low.match(/combinations? of\s*(\d+)\s*(?:taken|choose|at a time)?\s*(\d+)/);
+        if (m && /combin|choose|chose|\dc\d/.test(low)) {
+          var n = +m[1], r = +m[2], comb = nCrCalc(n, r);
+          if (comb === null) return null;
+          var combF = fact(n) / (fact(r) * fact(n - r));
+          if (!Xclose(comb, combF)) return null; /* verified against the factorial formula */
+          return Xmk("Combinations — nCr", "Use combinations when the ORDER does not matter: nCr = n! / (r!(n−r)!).", n + "C" + r + " = " + fmtNum(comb), [
+            Xst("Substitute into nCr = n!/(r!(n−r)!)", "", n + "C" + r + " = " + n + "! / (" + r + "! × " + (n - r) + "!)"),
+            Xst("Calculate", "", "= " + fmtNum(comb)),
+            Xst("State the final answer", "", n + "C" + r + " = " + fmtNum(comb)) ]);
+        }
+        m = low.match(/\b(\d+)\s*p\s*(\d+)\b/) || low.match(/permutations? of\s*(\d+)\s*(?:taken)?\s*(\d+)/);
+        if (m) {
+          var n2 = +m[1], r2 = +m[2], perm = fact(n2) / fact(n2 - r2);
+          var perm2 = 1; for (var i3 = 0; i3 < r2; i3++) perm2 *= (n2 - i3);
+          if (!Xclose(perm, perm2)) return null;
+          return Xmk("Permutations — nPr", "Use permutations when the ORDER matters: nPr = n! / (n−r)! — each arrangement counts separately.", n2 + "P" + r2 + " = " + fmtNum(perm), [
+            Xst("Substitute into nPr = n!/(n−r)!", "", n2 + "P" + r2 + " = " + n2 + "! / " + (n2 - r2) + "!"),
+            Xst("Calculate", "Multiply the top " + r2 + " numbers down from " + n2 + ":", "= " + fmtNum(perm)),
+            Xst("State the final answer", "", n2 + "P" + r2 + " = " + fmtNum(perm)) ]);
+        }
+        m = low.match(/arrang\w*\s+(?:of\s+)?(\d+)\s+(?:different\s+)?(?:people|students|books|letters|players|children)/);
+        if (m) { var nA = +m[1], ways = fact(nA);
+          return Xmk("Arrangements — Factorial", "Arranging n different items in a line can be done in n! ways: n choices for the first place, n−1 for the next, and so on.", fmtNum(ways) + " ways", [
+            Xst("Multiply the choices", nA + " × " + (nA - 1) + " × … × 1:", nA + "! = " + fmtNum(ways)),
+            Xst("State the final answer", "", fmtNum(ways) + " ways") ]); }
+        if (/probabilit/.test(low)) {
+          m = low.match(/(?:rolling|getting|throwing)\s+a\s+(\d)\s+on\s+a\s+(?:dice|die)/);
+          if (m) return Xmk("Probability — Single Event", "Probability = favourable outcomes ÷ total equally likely outcomes. A fair dice has 6 faces.", "P(" + m[1] + ") = 1/6", [
+            Xst("Count the outcomes", "Favourable outcomes: just the face " + m[1] + " — 1 outcome. Total outcomes: 6 faces:", "P = 1/6"),
+            Xst("State the final answer", "", "P(" + m[1] + ") = 1/6 ≈ " + fmtNum(1 / 6)) ]);
+          if (/two heads|both heads|heads twice|two coins.*heads/.test(low)) return Xmk("Probability — Two Independent Events", "For independent events, multiply the separate probabilities: P(head) × P(head) = ½ × ½.", "P(two heads) = 1/4", [
+            Xst("List the sample space", "Two coins give 4 equally likely results: HH, HT, TH, TT. Only HH has two heads:", "P = 1/4"),
+            Xst("State the final answer", "", "P(two heads) = 1/4") ]);
+          var colourCounts = {}, cm2, reC = /(\d+)\s+(red|blue|green|yellow|black|white|orange|pink|purple)/g, total = 0;
+          while ((cm2 = reC.exec(low))) { colourCounts[cm2[2]] = +cm2[1]; total += +cm2[1]; }
+          var targetC = low.match(/(?:drawing|picking|taking|selecting|choosing)\s+an?\s+(red|blue|green|yellow|black|white|orange|pink|purple)/);
+          if (targetC && colourCounts[targetC[1]] !== undefined && total > 0) {
+            var cnt = colourCounts[targetC[1]], fr = Xfrac(cnt, total);
+            if (!Xclose(fr.n / fr.d, cnt / total, 1e-12) || cnt > total) return null;
+            return Xmk("Probability — Single Event", "Probability = favourable outcomes ÷ total outcomes. Count how many balls are " + targetC[1] + " and how many there are altogether.", "P(" + targetC[1] + ") = " + XfracPlain(fr), [
+              Xst("Count the outcomes", "Favourable: " + cnt + " " + targetC[1] + " balls. Total: " + total + " balls:", "P(" + targetC[1] + ") = " + cnt + "/" + total),
+              Xst("Simplify the fraction", "", "P(" + targetC[1] + ") = " + XfracPlain(fr) + " ≈ " + fmtNum(cnt / total)),
+              Xst("State the final answer", "", "P(" + targetC[1] + ") = " + XfracPlain(fr)) ]);
+          }
+        }
+        return null;
+      }
+
+      /* ----- ratio, rounding, bounds ----- */
+      function solveRatio(low) {
+        var m = /simplif|simplest/.test(low) ? (low.match(/ratio\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)/) || low.match(/(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)\s+in (?:its )?simplest form/)) : null;
+        if (m && !/(?:divide|share|split)\s/.test(low)) {
+          var a = +m[1], b = +m[2], g = Xgcd(a, b), ra = a / g, rb = b / g;
+          if (!Xclose(ra / rb, a / b)) return null;
+          return Xmk("Simplifying a Ratio", "Divide both parts of the ratio by their HCF — the ratio stays equivalent, just smaller.", ra + " : " + rb, [
+            Xst("Find the HCF of " + fmtNum(a) + " and " + fmtNum(b), "", "HCF = " + g),
+            Xst("Divide both parts by " + g, "", fmtNum(a) + " ÷ " + g + " : " + fmtNum(b) + " ÷ " + g + " = " + ra + " : " + rb),
+            Xst("State the final answer", "", ra + " : " + rb) ]);
+        }
+        m = low.match(/(?:divide|share|split)\s+(\d+(?:\.\d+)?)\s+in the ratio\s+(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)/);
+        if (m) {
+          var total = +m[1], p1 = +m[2], p2 = +m[3], parts = p1 + p2, each = total / parts, s1 = each * p1, s2 = each * p2;
+          if (!Xclose(s1 + s2, total)) return null;
+          return Xmk("Dividing in a Given Ratio", "Add the ratio parts to find how many equal shares there are; find one share; then multiply up for each part.", fmtNum(s1) + " and " + fmtNum(s2), [
+            Xst("Add the ratio parts", "", fmtNum(p1) + " + " + fmtNum(p2) + " = " + parts + " parts"),
+            Xst("Find one part", "", fmtNum(total) + " ÷ " + parts + " = " + fmtNum(each)),
+            Xst("Multiply up", "", fmtNum(p1) + " parts = " + fmtNum(s1) + " &nbsp;·&nbsp; " + fmtNum(p2) + " parts = " + fmtNum(s2)),
+            Xst("Check", fmtNum(s1) + " + " + fmtNum(s2) + " = " + fmtNum(total) + " ✓", ""),
+            Xst("State the final answer", "", fmtNum(s1) + " and " + fmtNum(s2)) ]);
+        }
+        m = low.match(/(?:if\s+)?(\d+(?:\.\d+)?)\s+([a-z]+)\s+costs?\s+(?:rs\.?\s*)?(\d+(?:\.\d+)?)[^?]*?(?:cost of|price of|for|find)\s+(\d+(?:\.\d+)?)\s+\2/);
+        if (m) {
+          var q1 = +m[1], cost1 = +m[3], q2 = +m[4], unit = cost1 / q1, cost2 = unit * q2;
+          if (!Xclose(cost2 / q2, unit)) return null;
+          return Xmk("Unitary Method (Proportion)", "Find the cost of ONE first, then scale up to the amount asked for.", "Cost = " + fmtNum(cost2), [
+            Xst("Find the cost of one " + m[2].replace(/s$/, ""), "", fmtNum(cost1) + " ÷ " + fmtNum(q1) + " = " + fmtNum(unit)),
+            Xst("Scale up to " + fmtNum(q2), "", fmtNum(unit) + " × " + fmtNum(q2) + " = " + fmtNum(cost2)),
+            Xst("State the final answer", "", "Cost of " + fmtNum(q2) + " " + m[2] + " = " + fmtNum(cost2)) ]);
+        }
+        return null;
+      }
+      function solveRounding(low) {
+        var m = low.match(/round\s+(\d+(?:\.\d+)?)\s+to\s+(\d+)\s+decimal places?/);
+        if (m) { var n = +m[1], dp = +m[2], f = Math.pow(10, dp), r = Math.round(n * f) / f;
+          if (Math.abs(r - n) > 0.5 / f + 1e-12) return null;
+          return Xmk("Rounding to Decimal Places", "Look at the digit just after the last place you keep: 5 or more rounds UP, less than 5 rounds DOWN.", fmtNum(r), [
+            Xst("Keep " + dp + " decimal places", "The deciding digit is the one in position " + (dp + 1) + " after the point:", fmtNum(n) + " → " + fmtNum(r)),
+            Xst("State the final answer", "", fmtNum(r)) ]); }
+        m = low.match(/round\s+(\d+(?:\.\d+)?)\s+to\s+(\d+)\s+significant figures?/);
+        if (m) { var n2 = +m[1], sf = +m[2]; if (n2 === 0) return null;
+          var digits = Math.floor(Math.log10(Math.abs(n2))) + 1, fac = Math.pow(10, digits - sf), r2v = Math.round(n2 / fac) * fac;
+          if (Math.abs(r2v - n2) > fac / 2 + 1e-9) return null;
+          return Xmk("Rounding to Significant Figures", "Significant figures count from the first non-zero digit. Round so that exactly the stated number of digits carry the value.", fmtNum(r2v), [
+            Xst("Keep " + sf + " significant figures", "Count from the first non-zero digit of " + fmtNum(n2) + ", then round at that position:", fmtNum(n2) + " → " + fmtNum(r2v)),
+            Xst("State the final answer", "", fmtNum(r2v)) ]); }
+        m = low.match(/round\s+(\d+(?:\.\d+)?)\s+to the nearest\s+(10|100|1000|ten|hundred|thousand)/);
+        if (m) { var n3 = +m[1], unit = { "10": 10, "100": 100, "1000": 1000, ten: 10, hundred: 100, thousand: 1000 }[m[2]], r3 = Math.round(n3 / unit) * unit;
+          if (Math.abs(r3 - n3) > unit / 2 + 1e-9) return null;
+          return Xmk("Rounding to the Nearest " + m[2], "Find which multiple of " + unit + " the number is closest to — halfway rounds up.", fmtNum(r3), [
+            Xst("Compare with the neighbouring multiples", fmtNum(Math.floor(n3 / unit) * unit) + " and " + fmtNum(Math.ceil(n3 / unit) * unit) + " are the two candidates; " + fmtNum(n3) + " is closer to (or halfway to) " + fmtNum(r3) + ":", fmtNum(n3) + " → " + fmtNum(r3)),
+            Xst("State the final answer", "", fmtNum(r3)) ]); }
+        m = low.match(/(\d+(?:\.\d+)?)\s*(?:cm|mm|m|kg|g)?\s*(?:is\s+)?measured\s+to the nearest\s+(\d+(?:\.\d+)?|cm|mm|m|kg|g)/) || low.match(/(?:upper and lower bounds?|bounds?)\s*(?:of|for)?\s*(\d+(?:\.\d+)?)\s*(?:cm|mm|m|kg|g)?\s*(?:to the nearest\s+(\d+(?:\.\d+)?))?/);
+        if (m && /bound/.test(low)) {
+          var val = +m[1], step = m[2] ? (isNaN(+m[2]) ? 1 : +m[2]) : 1, half = step / 2, lo2 = val - half, hi2 = val + half;
+          if (!Xclose((lo2 + hi2) / 2, val)) return null;
+          return Xmk("Upper and Lower Bounds", "A measurement rounded to the nearest unit could be up to HALF a unit out in either direction — the true value lies within half a unit of the stated value.", "Lower bound = " + fmtNum(lo2) + ", upper bound = " + fmtNum(hi2), [
+            Xst("Halve the rounding unit", "Rounded to the nearest " + fmtNum(step) + ", so the error is at most half of that:", fmtNum(step) + " ÷ 2 = " + fmtNum(half)),
+            Xst("Subtract and add", "", "Lower bound = " + fmtNum(val) + " − " + fmtNum(half) + " = " + fmtNum(lo2) + " &nbsp;·&nbsp; Upper bound = " + fmtNum(val) + " + " + fmtNum(half) + " = " + fmtNum(hi2)),
+            Xst("State the final answer", "The true value satisfies " + fmtNum(lo2) + " ≤ value < " + fmtNum(hi2) + ":", "Lower = " + fmtNum(lo2) + ", Upper = " + fmtNum(hi2)) ]);
+        }
+        return null;
+      }
+
+      /* ----- word problems ----- */
+      function solveWordProblems(low) {
+        var m;
+        m = low.match(/(\d+(?:\.\d+)?)\s*times as old as/) ;
+        var sumM = low.match(/sum of their ages is\s*(\d+(?:\.\d+)?)/);
+        if (m && sumM) {
+          var k = +m[1], S = +sumM[1], younger = S / (k + 1), older = S - younger;
+          if (!Xclose(older / younger, k) || !Xclose(older + younger, S)) return null;
+          return Xmk("Age Problem (Algebra)", "Let the younger age be x; the older is k times that. Their sum gives one simple equation in x.", "Ages are " + fmtNum(younger) + " and " + fmtNum(older), [
+            Xst("Set up the equation", "Younger = x, older = " + fmtNum(k) + "x, and together they make " + fmtNum(S) + ":", "x + " + fmtNum(k) + "x = " + fmtNum(S)),
+            Xst("Solve for x", "", fmtNum(k + 1) + "x = " + fmtNum(S) + " &nbsp;⇒&nbsp; x = " + fmtNum(younger)),
+            Xst("Find both ages", "Younger = " + fmtNum(younger) + "; older = " + fmtNum(k) + " × " + fmtNum(younger) + " = " + fmtNum(older) + ":", "Check: " + fmtNum(younger) + " + " + fmtNum(older) + " = " + fmtNum(S) + " ✓"),
+            Xst("State the final answer", "", "Ages are " + fmtNum(younger) + " and " + fmtNum(older)) ]);
+        }
+        m = low.match(/(\d+(?:\.\d+)?)\s*years? older than/);
+        if (m && sumM) {
+          var dA = +m[1], SA = +sumM[1], yng = (SA - dA) / 2, old = yng + dA;
+          if (!Xclose(old - yng, dA) || !Xclose(old + yng, SA)) return null;
+          return Xmk("Age Problem (Algebra)", "Let the younger age be x; the older is x + d. Their sum gives one simple equation in x.", "Ages are " + fmtNum(yng) + " and " + fmtNum(old), [
+            Xst("Set up the equation", "Younger = x, older = x + " + fmtNum(dA) + ", sum = " + fmtNum(SA) + ":", "x + (x + " + fmtNum(dA) + ") = " + fmtNum(SA)),
+            Xst("Solve for x", "", "2x = " + fmtNum(SA - dA) + " &nbsp;⇒&nbsp; x = " + fmtNum(yng)),
+            Xst("Find both ages", "Younger = " + fmtNum(yng) + "; older = " + fmtNum(yng) + " + " + fmtNum(dA) + " = " + fmtNum(old) + ". Check: " + fmtNum(yng) + " + " + fmtNum(old) + " = " + fmtNum(SA) + " ✓", ""),
+            Xst("State the final answer", "", "Ages are " + fmtNum(yng) + " and " + fmtNum(old)) ]);
+        }
+        if (/speed|distance|time/.test(low) && /(km|miles|metres|meters|m)\b/.test(low)) {
+          var distM = low.match(/(\d+(?:\.\d+)?)\s*(km|miles|metres|meters|m)\b(?!\s*\/)/), timeM = low.match(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?)\b/), spdM = low.match(/(\d+(?:\.\d+)?)\s*(km\/h|mph|m\/s)/);
+          var dist = distM ? +distM[1] : null, tim = timeM ? +timeM[1] : null, spd = spdM ? +spdM[1] : null;
+          if (/find|what is|calculate/.test(low)) {
+            if (/speed/.test(low) && dist !== null && tim !== null && spd === null && !/find the distance|distance travelled|how far/.test(low)) {
+              var v = dist / tim; if (!Xclose(v * tim, dist)) return null;
+              return Xmk("Speed = Distance ÷ Time", "The speed triangle: speed = distance ÷ time, distance = speed × time, time = distance ÷ speed. Cover the one you want.", "Speed = " + fmtNum(v) + " " + (distM[2] === "km" ? "km/h" : distM[2] + "/h"), [
+                Xst("Write down distance and time", "", "Distance = " + fmtNum(dist) + " " + distM[2] + ", &nbsp; Time = " + fmtNum(tim) + " " + timeM[2]),
+                Xst("Divide distance by time", "", "Speed = " + fmtNum(dist) + " ÷ " + fmtNum(tim) + " = " + fmtNum(v)),
+                Xst("Check", fmtNum(v) + " × " + fmtNum(tim) + " = " + fmtNum(dist) + " ✓", ""),
+                Xst("State the final answer", "", "Speed = " + fmtNum(v) + " " + (distM[2] === "km" ? "km/h" : "per hour")) ]);
+            }
+            if (/distance/.test(low) && spd !== null && tim !== null) {
+              var dd = spd * tim; if (!Xclose(dd / tim, spd)) return null;
+              return Xmk("Distance = Speed × Time", "From the speed triangle: distance = speed × time.", "Distance = " + fmtNum(dd), [
+                Xst("Multiply speed by time", "", "Distance = " + fmtNum(spd) + " × " + fmtNum(tim) + " = " + fmtNum(dd)),
+                Xst("State the final answer", "", "Distance = " + fmtNum(dd)) ]);
+            }
+            if ((/time|how long/.test(low)) && dist !== null && spd !== null) {
+              var tt = dist / spd; if (!Xclose(tt * spd, dist)) return null;
+              return Xmk("Time = Distance ÷ Speed", "From the speed triangle: time = distance ÷ speed.", "Time = " + fmtNum(tt), [
+                Xst("Divide distance by speed", "", "Time = " + fmtNum(dist) + " ÷ " + fmtNum(spd) + " = " + fmtNum(tt)),
+                Xst("Check", fmtNum(tt) + " × " + fmtNum(spd) + " = " + fmtNum(dist) + " ✓", ""),
+                Xst("State the final answer", "", "Time = " + fmtNum(tt)) ]);
+            }
+          }
+        }
+        m = low.match(/in\s+(\d+(?:\.\d+)?)\s*(days?|hours?)/);
+        if (m && /together|both|combined/.test(low) && /(job|work|tank|fill|task|complete)/.test(low)) {
+          var allT = low.match(/in\s+(\d+(?:\.\d+)?)\s*(days?|hours?)/g);
+          if (allT && allT.length >= 2) {
+            var t1 = +allT[0].match(/(\d+(?:\.\d+)?)/)[1], t2 = +allT[1].match(/(\d+(?:\.\d+)?)/)[1], unitW = m[2];
+            var rate = 1 / t1 + 1 / t2, together = 1 / rate;
+            if (!Xclose(rate * together, 1, 1e-9)) return null;
+            var togetherF = XtoFrac(together);
+            return Xmk("Working Together (Rates Add)", "Work rates add: in one day/hour, the first finishes 1/a of the job and the second 1/b — together they finish (1/a + 1/b) per unit time.", "Together = " + fmtNum(together) + " " + unitW + (togetherF ? " (" + XfracPlain(togetherF) + ")" : ""), [
+              Xst("Write each rate per " + unitW.replace(/s$/, ""), "First: 1/" + fmtNum(t1) + " of the job; second: 1/" + fmtNum(t2) + " of the job:", "Rates: " + fmtNum(1 / t1) + " and " + fmtNum(1 / t2)),
+              Xst("Add the rates", "", "Combined rate = " + fmtNum(rate) + " of the job per " + unitW.replace(/s$/, "")),
+              Xst("Time together = 1 ÷ combined rate", "", "Time = 1 ÷ " + fmtNum(rate) + " = " + fmtNum(together) + " " + unitW),
+              Xst("State the final answer", "", "Together they take " + fmtNum(together) + " " + unitW) ]);
+          }
+        }
+        if (/mix/.test(low) && /%/.test(low)) {
+          var pairs = [], pm2, reP = /(\d+(?:\.\d+)?)\s*(?:litres?|liters?|kg|l|ml|g)\b[^%]*?(\d+(?:\.\d+)?)\s*%/g;
+          while ((pm2 = reP.exec(low))) pairs.push({ amt: +pm2[1], conc: +pm2[2] });
+          if (pairs.length === 2) {
+            var totAmt = pairs[0].amt + pairs[1].amt, totPure = pairs[0].amt * pairs[0].conc / 100 + pairs[1].amt * pairs[1].conc / 100, concF = totPure / totAmt * 100;
+            if (!Xclose(concF / 100 * totAmt, totPure, 1e-9)) return null;
+            return Xmk("Mixture — Weighted Average Concentration", "Track the pure amount: each part contributes amount × concentration. The mixture's concentration is total pure ÷ total amount.", "Concentration = " + fmtNum(concF) + "%", [
+              Xst("Find the pure amount in each part", pairs[0].amt + " at " + pairs[0].conc + "% gives " + fmtNum(pairs[0].amt * pairs[0].conc / 100) + "; " + pairs[1].amt + " at " + pairs[1].conc + "% gives " + fmtNum(pairs[1].amt * pairs[1].conc / 100) + ":", "Total pure = " + fmtNum(totPure)),
+              Xst("Divide by the total amount", "", fmtNum(totPure) + " ÷ " + fmtNum(totAmt) + " × 100 = " + fmtNum(concF) + "%"),
+              Xst("State the final answer", "", "Concentration = " + fmtNum(concF) + "%") ]);
+          }
+        }
+        return null;
+      }
+
+      /* ----- the extended dispatcher ----- */
+      function solveExtended(s, low, v) {
+        var t = s.replace(/θ/g, "x");
+        var tl = low.replace(/θ/g, "x").replace(/theta/g, "x");
+        var r;
+        if ((r = solveMatrix(t, tl))) return r;
+        if ((r = solveSimultaneous(t, tl))) return r;
+        if (/[<>]/.test(t) && /x|y/.test(tl)) { if ((r = solveInequality(t, tl, v))) return r; }
+        if ((r = solveTrig(t, tl))) return r;
+        if (/log|ln\(|\^\s*x\s*=/.test(tl)) { if ((r = solveLogEquations(t, tl))) return r; }
+        if ((r = solveProportion(t))) return r;
+        if ((r = solvePercent(t, tl))) return r;
+        if ((r = solveHcfLcm(t, tl))) return r;
+        if ((r = solvePrimeFactor(tl))) return r;
+        if ((r = solveFractionSimple(t, tl))) return r;
+        if ((r = solveFractionArith(t))) return r;
+        if ((r = solveStandardForm(tl))) return r;
+        if ((r = solveSurd(t, tl))) return r;
+        if ((r = solveRootsWords(tl))) return r;
+        if ((r = solveSequence(t, tl))) return r;
+        if ((r = solveVariation(tl))) return r;
+        if ((r = solveStats(t, tl))) return r;
+        if ((r = solveProbability(tl))) return r;
+        if ((r = solveRatio(tl))) return r;
+        if ((r = solveRounding(tl))) return r;
+        if ((r = solveGeometry(t, tl))) return r;
+        if ((r = solvePythagoras(tl))) return r;
+        if ((r = solveAngles(tl))) return r;
+        if ((r = solveCoordGeom(t, tl))) return r;
+        if ((r = solveScaleFactor(tl))) return r;
+        if ((r = solveFunctions(t, tl))) return r;
+        if ((r = solveCalculusExtra(t, tl, v))) return r;
+        if ((r = solveExpand(t, tl))) return r;
+        if ((r = solveCompleteSquare(t, tl, v))) return r;
+        if ((r = solveFactorExtra(t, tl, v))) return r;
+        if ((r = solveWordProblems(tl))) return r;
+        return null;
+      }
+
       /* ---------- question dispatcher ---------- */
       function cleanExpr(s) {
         return s.replace(/\?+$/, "").trim();
@@ -2518,6 +4214,10 @@
           if (gSpec) return graphResult(gSpec);
         }
 
+        var extRes = null;
+        try { extRes = solveExtended(s, low, v); } catch (eX) { extRes = null; }
+        if (extRes) return extRes;
+
         try {
           if (/domain/.test(low)) {
             var dExpr = cleanExpr(stripLead(s.replace(/.*domain\s*(of)?/i, ""), ["of", "the"]));
@@ -2577,7 +4277,7 @@
               { h: "State the final answer", p: "Write the groups in descending power order:", fx: simplified }
             ]};
           }
-          return { unsupported: "I could not reduce that one. Try an equation, a polynomial, or one of the example questions above." };
+          return { unsupported: notYetMessage(low) };
         } catch (e) {
           var emsg = (e && e.message) || "";
           var um = emsg.match(/Unexpected character:\s*([\s\S])/);
@@ -2619,6 +4319,14 @@
         if (/integrate|integral/.test(low)) return "Integration is differentiation backwards: raise the power by 1 and divide by the new power. And never forget the + C — the constant that differentiation would have wiped out.";
         if (/factor/.test(low)) return "For x² + bx + c, hunt for two numbers that multiply to give c and add to give b. If you cannot spot them, the quadratic formula will hand you the roots, and each root r gives a factor (x − r).";
         if (low.indexOf("=") >= 0) return "First decide what kind of equation it is. Everything on one side: if x² survives it is quadratic — check the discriminant D = b² − 4ac to see how many roots to expect. If only x survives, it is linear — just isolate x.";
+        if (/percent|discount|profit|interest/.test(low)) return "Percentages are fractions out of 100: turn the % into /100 first, then multiply. For profit and interest, watch WHICH value the percentage is taken of — profit % is on the cost price, and simple interest is on the original principal only.";
+        if (/hcf|lcm|multiple|factor of/.test(low)) return "Break every number into prime factors first. HCF takes the primes common to all of them (lowest powers); LCM takes every prime at its highest power.";
+        if (/area|volume|perimeter|circumference|surface/.test(low)) return "Pick the formula for the shape first, write down every measurement it needs, and keep the units straight: lengths in units, areas in units squared, volumes in units cubed.";
+        if (/\bsin\b|\bcos\b|\btan\b|trigonometr|hypotenuse|opposite|adjacent/.test(low)) return "In a right-angled triangle, label the sides from the angle first — Hypotenuse, Opposite, Adjacent — then SOH CAH TOA tells you which ratio connects the sides you know and the side you want.";
+        if (/matrix|matrices|determinant/.test(low)) return "Matrices work position by position for + and -, but multiplication is row-by-column: each entry is a whole row of the first matrix dotted with a whole column of the second.";
+        if (/mean|median|mode|average/.test(low)) return "Sort the data first — the median and mode are read off the ordered list, and the mean is just the total shared out equally: sum divided by how many values there are.";
+        if (/probability|dice|coin|balls/.test(low)) return "Probability = favourable outcomes divided by total equally likely outcomes. Count both carefully before you simplify the fraction.";
+        if (/simultaneous|inequality/.test(low)) return "For simultaneous equations, eliminate one variable completely, solve for the other, then substitute back — and check the pair in BOTH originals. For an inequality, remember: dividing by a negative flips the sign.";
         return "Follow BODMAS: brackets first, then powers (orders), then division and multiplication, and addition and subtraction last. Group the like terms together and simplify one step at a time.";
       }
       function fallbackMethod(raw) {
