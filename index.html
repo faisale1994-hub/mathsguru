@@ -615,8 +615,10 @@
           </form>
           <div class="upload-row">
             <button class="btn" type="button" id="solverUploadBtn">📷 Browse / Upload a photo or PDF</button>
-            <span class="upload-hint">or drag &amp; drop a photo (JPG, PNG) or a PDF of your question onto this box</span>
+            <button class="btn" type="button" id="solverCameraBtn">📷 Take a photo</button>
+            <span class="upload-hint">take a photo of your question, upload a photo (JPG, PNG) or a PDF, or drag &amp; drop it onto this box</span>
             <input type="file" id="solverFileInput" accept="image/jpeg,image/png,.jpg,.jpeg,.png,application/pdf,.pdf" hidden />
+            <input type="file" id="solverCameraInput" accept="image/*" capture="environment" hidden />
           </div>
           <div class="upload-preview" id="solverUploadPreview" aria-live="polite">
             <img id="solverUploadThumb" alt="Preview of your uploaded maths question" hidden />
@@ -4858,6 +4860,7 @@
         thumb.hidden = true;
         thumb.removeAttribute("src");
         $("solverFileInput").value = "";
+        $("solverCameraInput").value = "";
         var meta = $("solverUploadMeta");
         meta.textContent = uploadFileName || "Your file";
         var rej = document.createElement("span");
@@ -4903,7 +4906,7 @@
         $("solverInput").value = cleaned;
         $("solverSolveUploadBtn").disabled = false;
         showUploadMsg("");
-        setUploadStatus("I read this from your file — check it above, fix anything if needed, then tap “Solve this”.");
+        setUploadStatus("Check the question in the box above — fix any wrong symbols, then tap “Solve this”.");
         $("solverInput").focus();
       }
       function extractPdfText(buf, done) {
@@ -4931,7 +4934,15 @@
         loadTesseract(function (ok) {
           if (!ok || !window.Tesseract) { done(""); return; }
           var workerP = null;
-          try { workerP = window.Tesseract.createWorker("eng"); } catch (e) { done(""); return; }
+          try {
+            workerP = window.Tesseract.createWorker("eng", 1, {
+              logger: function (m) {
+                if (m && m.status === "recognizing text" && typeof m.progress === "number") {
+                  setUploadStatus("Reading your photo… " + Math.round(m.progress * 100) + "%");
+                }
+              }
+            });
+          } catch (e) { done(""); return; }
           Promise.resolve(workerP).then(function (worker) {
             return worker.recognize(dataUrl).then(function (res) {
               var text = (res && res.data && res.data.text) || "";
@@ -4956,6 +4967,7 @@
           thumb.hidden = true;
           thumb.removeAttribute("src");
           $("solverFileInput").value = "";
+          $("solverCameraInput").value = "";
           meta.textContent = name;
           setUploadStatus("");
           showUploadMsg("That file type is not supported. Please upload a photo (JPG or PNG) or a PDF.");
@@ -4965,6 +4977,7 @@
           thumb.hidden = true;
           thumb.removeAttribute("src");
           $("solverFileInput").value = "";
+          $("solverCameraInput").value = "";
           meta.textContent = name;
           setUploadStatus("");
           showUploadMsg("That file is too big (over 15 MB). Please try a smaller photo or PDF.");
@@ -4996,6 +5009,7 @@
       function resetSolverUpload() {
         uploadFileName = "";
         $("solverFileInput").value = "";
+        $("solverCameraInput").value = "";
         $("solverUploadPreview").classList.remove("show");
         $("solverUploadThumb").hidden = true;
         $("solverUploadThumb").removeAttribute("src");
@@ -5006,6 +5020,10 @@
       }
       $("solverUploadBtn").addEventListener("click", function () { $("solverFileInput").click(); });
       $("solverFileInput").addEventListener("change", function () {
+        handleSolverFile(this.files && this.files[0]);
+      });
+      $("solverCameraBtn").addEventListener("click", function () { $("solverCameraInput").click(); });
+      $("solverCameraInput").addEventListener("change", function () {
         handleSolverFile(this.files && this.files[0]);
       });
       $("solverSolveUploadBtn").addEventListener("click", function () {
