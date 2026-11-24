@@ -3745,6 +3745,63 @@
         }
         return det;
       }
+      /* ----- sets: power set ----- */
+      function solvePowerSet(t, tl) {
+        var bm = t.match(/\{([^{}]*)\}/);
+        if (!bm) return null;
+        /* Trigger: the phrase "power set" anywhere, or P( {…} ) at the
+           start. A brace literal with neither is left for other handlers. */
+        if (!/power set/.test(tl) && !/^\s*p\s*\(\s*\{/.test(tl)) return null;
+        /* Parse the FIRST { ... } group. solveQuestion has already turned
+           × into *, ÷ into / and − into -, so map operator elements back
+           to their proper signs for display. */
+        function dispEl(e) {
+          if (e === "*" || e === "x") return "×";
+          if (e === "/") return "÷";
+          if (e === "-") return "−";
+          return e;
+        }
+        var els = [];
+        bm[1].split(",").forEach(function (p) {
+          var e = dispEl(p.trim());
+          if (e === "" || els.indexOf(e) !== -1) return; /* a set has no repeated elements */
+          els.push(e);
+        });
+        var n = els.length;
+        var total = Math.pow(2, n);
+        var setStr = n ? "{" + els.join(", ") + "}" : "∅";
+        var why = "The power set of a set A is the set of ALL subsets of A — including the empty set ∅ and A itself. If A has n elements, the power set has 2^n subsets, because each element is either in a subset or out of it.";
+        var steps = [
+          Xst("Write the set", "Call the given set A:", "A = " + setStr),
+          Xst("Count the elements", "Count the elements of A, then use the rule: a set with n elements has 2" + sup("n") + " subsets:", "n = " + n + " &nbsp;⇒&nbsp; number of subsets = 2" + sup(n) + " = " + total)
+        ];
+        if (n > 8) {
+          /* more than 256 subsets — give the count and the method, not the list */
+          steps.push(Xst("Group the subsets by size", "The subsets are grouped by how many elements they hold: first the empty set (0 elements), then every 1-element subset, then every 2-element subset, and so on up to A itself with all " + n + " elements. The groups hold C(" + n + ", 0), C(" + n + ", 1), …, C(" + n + ", " + n + ") subsets, and these counts add up to 2" + sup(n) + " = " + total + ".", ""));
+          steps.push(Xst("State the final answer", "With " + total + " subsets, the full list is too long to write out — but the count is exact:", "P(A) has 2" + sup(n) + " = " + total + " subsets"));
+          return Xmk("Power Set — All Possible Subsets", why, "P(A) has 2^" + n + " = " + total + " subsets (too many to list in full)", steps);
+        }
+        function subsetStr(combo) { return combo.length ? "{" + combo.join(", ") + "}" : "∅"; }
+        var all = [], counted = 0;
+        for (var k = 0; k <= n; k++) {
+          var combos = [];
+          (function gen(start, chosen) {
+            if (chosen.length === k) { combos.push(chosen.slice()); return; }
+            for (var i = start; i < n; i++) { chosen.push(els[i]); gen(i + 1, chosen); chosen.pop(); }
+          })(0, []);
+          counted += combos.length;
+          var list = combos.map(subsetStr);
+          all = all.concat(list);
+          steps.push(Xst("Subsets with " + k + (k === 1 ? " element" : " elements"),
+            k === 0 ? "The empty set ∅ is a subset of every set:" : (k === n ? "The set itself is also one of its own subsets:" : "There are C(" + n + ", " + k + ") = " + combos.length + " of these:"),
+            list.join(", ")));
+        }
+        if (counted !== total) return null; /* verified: the groups add up to 2^n */
+        var answerStr = "P(A) = {" + all.join(", ") + "}";
+        steps.push(Xst("State the final answer", "Collect every subset into one set — that set of subsets is the power set P(A):", answerStr));
+        return Xmk("Power Set — All Possible Subsets", why, answerStr, steps);
+      }
+
       function solveMatrix(t, low) {
         var blocks = [], bm, reM = /\[\[[\s\S]*?\]\]/g;
         while ((bm = reM.exec(t))) blocks.push(bm[0]);
@@ -4083,6 +4140,7 @@
         var t = s.replace(/θ/g, "x");
         var tl = low.replace(/θ/g, "x").replace(/theta/g, "x");
         var r;
+        if ((r = solvePowerSet(t, tl))) return r;
         if ((r = solveMatrix(t, tl))) return r;
         if ((r = solveSimultaneous(t, tl))) return r;
         if (/[<>]/.test(t) && /x|y/.test(tl)) { if ((r = solveInequality(t, tl, v))) return r; }
